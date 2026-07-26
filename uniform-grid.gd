@@ -26,7 +26,7 @@ func _ready() -> void:
 				var point = MeshInstance3D.new()
 				point.mesh = sphere_mesh
 				point.position = v
-				point.scale *= 0.5
+				point.scale *= 0.25
 				
 				var val = noise.get_noise_3dv(v)
 				
