@@ -10,7 +10,7 @@ const shader = preload("res://scalar-field-visualization.gdshader")
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	var noise = FastNoiseLite.new()
-	noise.frequency = 0.075
+	noise.frequency = 0.05
 	
 	var sphere_mesh = SphereMesh.new()
 	sphere_mesh.radial_segments = 2
@@ -24,6 +24,7 @@ func _ready() -> void:
 				var v = Vector3(x, y, z) * spacing
 				
 				var point = MeshInstance3D.new()
+				point.cast_shadow = false
 				point.mesh = sphere_mesh
 				point.position = v
 				point.scale *= 0.25
@@ -36,5 +37,5 @@ func _ready() -> void:
 
 				point.material_override = mat
 				
-				if(val > 0.1):
+				if(val < 0.0):
 					add_child(point)

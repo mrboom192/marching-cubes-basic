@@ -1,27 +1,6 @@
 [gd_scene format=3 uid="uid://cf7vv0dlo47d"]
 
 [ext_resource type="Script" uid="uid://dmxa3hjwqyweg" path="res://uniform-grid.gd" id="1_3hmyw"]
-[ext_resource type="Script" uid="uid://cxuacjuaigvrt" path="res://marching-cubes.gd" id="2_v8k6g"]
 
-[sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_dwrn5"]
-
-[sub_resource type="Sky" id="Sky_khlmw"]
-sky_material = SubResource("PhysicalSkyMaterial_dwrn5")
-
-[sub_resource type="Environment" id="Environment_58qps"]
-background_mode = 2
-sky = SubResource("Sky_khlmw")
-
-[node name="Node3D" type="Node3D" unique_id=1801220944]
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1061414342]
-environment = SubResource("Environment_58qps")
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1514759698]
-transform = Transform3D(1, 0, 0, 0, 0.4283104, 0.9036317, 0, -0.9036317, 0.4283104, 0, 23.017006, 0)
-
-[node name="ScalarField" type="Node3D" parent="." unique_id=564847480]
+[node name="PointCloud" type="Node3D" unique_id=1801220944]
 script = ExtResource("1_3hmyw")
-
-[node name="Node3D" type="Node3D" parent="." unique_id=1820392096]
-script = ExtResource("2_v8k6g")
