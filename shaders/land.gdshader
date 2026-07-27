@@ -1,11 +1,7 @@
 shader_type spatial;
 
 void fragment() {
-	ALBEDO = vec3(0.75, 1.0, 0.25);
-	ROUGHNESS = 1.0;
-}
+    ALBEDO = vec3(0.25, 0.55, 0.15);
 
-//void light() {
-//	// Called for every pixel for every light affecting the material.
-//	// Uncomment to replace the default light processing function with this one.
-//}
+    ROUGHNESS = 1.0;
+}

@@ -1,7 +1,7 @@
 shader_type spatial;
 
 void fragment() {
-	ALBEDO = vec3(0.0, 0.4, 1.0);
+	ALBEDO = vec3(0.05, 0.2, 1.0);
 	ROUGHNESS = 0.025;
 }
 

@@ -6,6 +6,6 @@
 script = ExtResource("1_qhlp4")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=636496782]
-transform = Transform3D(0.96991146, 0.103414, 0.22040313, -0.23345229, 0.13818239, 0.96249974, 0.06908011, -0.984993, 0.15816689, 20.772316, 5.8661766, 0)
+transform = Transform3D(0.9699113, 0.10341398, 0.2204032, -0.23781034, 0.5963025, 0.7667264, -0.052136805, -0.7960707, 0.6029535, 20.772316, 5.8661766, 0)
 shadow_enabled = true
 sky_mode = 1

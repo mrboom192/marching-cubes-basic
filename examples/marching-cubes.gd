@@ -13,6 +13,9 @@ var levels = 100
 var noise: Noise
 var iso_value = 0
 
+var center = Vector3(levels / 2, levels / 2, levels / 2)
+var radius = levels / 2.25
+
 var ocean_shader = preload("res://shaders/ocean.gdshader")
 var land_shader = preload("res://shaders/land.gdshader")
 
@@ -326,9 +329,6 @@ func interpolate(a: Vector3, b: Vector3, a_val: float, b_val: float) -> Vector3:
 # For now, the scalar field is a sphere with noise on top of its implicit surface
 # Looks like a meatball
 func sample_scalar_field(v: Vector3) -> float:
-	var center = Vector3(levels / 2, levels / 2, levels / 2)
-	var radius = levels / 2.25
-	
 	var noise_val = noise.get_noise_3dv(v) * 2.5
 	var sea_level = v.distance_to(center) - radius
 	
@@ -509,7 +509,6 @@ func polygonize():
 	
 	var mat = ShaderMaterial.new()
 	mat.shader = land_shader
-	
 	surface.set_surface_override_material(0, mat)
 	
 	add_child(surface)
