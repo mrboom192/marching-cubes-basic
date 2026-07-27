@@ -12,3 +12,4 @@ shadow_enabled = true
 sky_mode = 1
 
 [node name="PointCloud" parent="." unique_id=1801220944 instance=ExtResource("2_g0pya")]
+visible = false

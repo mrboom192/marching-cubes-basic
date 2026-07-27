@@ -1,7 +1,7 @@
 @tool
 extends Node
 
-var levels = 35
+var levels = 50
 var noise: Noise
 var iso_value = 0
 
@@ -322,10 +322,7 @@ func polygonize():
 	var surface_array = []
 	surface_array.resize(Mesh.ARRAY_MAX)
 	var vertices: PackedVector3Array
-	var normals: PackedVector3Array
 	var indexes: PackedInt32Array
-	
-	var offset = 0
 	
 	for x in range(levels):
 		for y in range(levels):
@@ -346,18 +343,19 @@ func polygonize():
 				
 				# Retrieve from cache if alredy sampled, else sample the corner
 				var vals: Array = []
-				for i in range(grid.size()):
+				vals.resize(8)
+				for i in range(8):
 					var p = grid[i]
 					var key := Vector3i(p)
 					
 					if sampled_noise_dict.has(key):
-						vals.push_back(sampled_noise_dict[key])
+						vals[i] = sampled_noise_dict[key]
 					else:
 						# Sample the iso-surface function
 						# In this case, its Godot's FastNoiseLite
 						var sampled = noise.get_noise_3dv(grid[i])
 						sampled_noise_dict[key] = sampled
-						vals.push_back(sampled)
+						vals[i] = sampled
 				
 				# Used to look up the vertex order which comes from tri_table,
 				# and the intersected edges from edge_table
@@ -405,37 +403,59 @@ func polygonize():
 					if indices[i] == -1:
 						break
 					
-					if verts_dict.has(verts[indices[i]]):
-						indexes.push_back(verts_dict[verts[indices[i]]])
+					var a = verts[indices[i    ]]
+					if verts_dict.has(a):
+						indexes.push_back(verts_dict[a])
 					else:
-						vertices.push_back(verts[indices[i]])
-						indexes.push_back(0 + offset)
+						verts_dict[a] = vertices.size()
+						indexes.push_back(verts_dict[a])
+						vertices.push_back(a)
 					
-					if verts_dict.has(verts[indices[i + 1]]):
-						indexes.push_back(verts_dict[verts[indices[i + 1]]])
+					var b = verts[indices[i + 1]]
+					if verts_dict.has(b):
+						indexes.push_back(verts_dict[b])
 					else:
-						vertices.push_back(verts[indices[i + 1]])
-						indexes.push_back(1 + offset)
+						verts_dict[b] = vertices.size()
+						indexes.push_back(verts_dict[b])
+						vertices.push_back(b)
 					
-					if verts_dict.has(verts[indices[i + 2]]):
-						indexes.push_back(verts_dict[verts[indices[i + 2]]])
+					var c = verts[indices[i + 2]]
+					if verts_dict.has(c):
+						indexes.push_back(verts_dict[c])
 					else:
-						vertices.push_back(verts[indices[i + 2]])
-						indexes.push_back(2 + offset)
+						verts_dict[c] = vertices.size()
+						indexes.push_back(verts_dict[c])
+						vertices.push_back(c)
 					
 					# Remember the right hand rule
 					# This is the correct winding order for Godot (clockwise)
-					var normal = (vertices[2 + offset] - vertices[0 + offset]).cross(
-						vertices[1 + offset] - vertices[0 + offset]).normalized()
-					normals.push_back(normal)
-					normals.push_back(normal)
-					normals.push_back(normal)
+					var normal = (vertices[verts_dict[c]] - vertices[verts_dict[a]]).cross(
+						vertices[verts_dict[b]] - vertices[verts_dict[a]]).normalized()
 					
-					#normals_dict[vertices[0]].push_back(normal)
-					#normals_dict[vertices[1]].push_back(normal)
-					#normals_dict[vertices[2]].push_back(normal)
+					# Need to initialize before can push_back
+					var a_normals = vertices[verts_dict[a]]
+					if !normals_dict.has(a_normals):
+						normals_dict[a_normals] = PackedVector3Array()
+					normals_dict[a_normals].push_back(normal)
 					
-					offset += 3
+					var b_normals = vertices[verts_dict[b]]
+					if !normals_dict.has(b_normals):
+						normals_dict[b_normals] = PackedVector3Array()
+					normals_dict[b_normals].push_back(normal)
+					
+					var c_normals = vertices[verts_dict[c]]
+					if !normals_dict.has(c_normals):
+						normals_dict[c_normals] = PackedVector3Array()
+					normals_dict[c_normals].push_back(normal)
+	
+	var normals: PackedVector3Array
+	for v in vertices:
+		var sum = Vector3.ZERO
+		
+		for n in normals_dict[v]:
+			sum += n
+		
+		normals.push_back((sum / normals_dict[v].size()).normalized())
 	
 	surface_array[Mesh.ARRAY_VERTEX] = vertices
 	surface_array[Mesh.ARRAY_INDEX] = indexes
