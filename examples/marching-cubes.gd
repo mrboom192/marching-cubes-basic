@@ -520,5 +520,8 @@ func _ready() -> void:
 	noise = FastNoiseLite.new()
 	noise.frequency = 0.03
 	
+	noise.fractal_octaves = 7
+	noise.fractal_lacunarity = 2.5
+	
 	polygonize()
 	place_water()
