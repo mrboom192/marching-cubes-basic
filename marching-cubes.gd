@@ -313,6 +313,12 @@ func interpolate(a: Vector3, b: Vector3, a_val: float, b_val: float) -> Vector3:
 
 
 func polygonize():
+	var sampled_noise_dict: Dictionary[Vector3i, float] = {}
+	
+	# Used for computing weighted normal average of polygons sharing the vertex
+	var verts_dict: Dictionary[Vector3, int] = {}
+	var normals_dict: Dictionary[Vector3, PackedVector3Array] = {}
+	
 	var surface_array = []
 	surface_array.resize(Mesh.ARRAY_MAX)
 	var vertices: PackedVector3Array
@@ -338,13 +344,20 @@ func polygonize():
 					Vector3(x + 0, y + 1, z + 1),
 				]
 				
-				# Sample function at each corner
+				# Retrieve from cache if alredy sampled, else sample the corner
 				var vals: Array = []
 				for i in range(grid.size()):
-					# Sample the iso-surface function
-					# In this case, its Godot's FastNoiseLite
-					var sampled = noise.get_noise_3dv(grid[i])
-					vals.push_back(sampled)
+					var p = grid[i]
+					var key := Vector3i(p)
+					
+					if sampled_noise_dict.has(key):
+						vals.push_back(sampled_noise_dict[key])
+					else:
+						# Sample the iso-surface function
+						# In this case, its Godot's FastNoiseLite
+						var sampled = noise.get_noise_3dv(grid[i])
+						sampled_noise_dict[key] = sampled
+						vals.push_back(sampled)
 				
 				# Used to look up the vertex order which comes from tri_table,
 				# and the intersected edges from edge_table
@@ -387,27 +400,40 @@ func polygonize():
 				
 				# Create the array mesh
 				# For every 3, create a separate surface
-				
 				var indices = tri_table[cube_idx]
 				for i in range(0, indices.size(), 3):
 					if indices[i] == -1:
 						break
 					
-					vertices.push_back(verts[indices[i    ]])
-					vertices.push_back(verts[indices[i + 1]])
-					vertices.push_back(verts[indices[i + 2]])
+					if verts_dict.has(verts[indices[i]]):
+						indexes.push_back(verts_dict[verts[indices[i]]])
+					else:
+						vertices.push_back(verts[indices[i]])
+						indexes.push_back(0 + offset)
 					
-					indexes.push_back(0 + offset)
-					indexes.push_back(1 + offset)
-					indexes.push_back(2 + offset)
+					if verts_dict.has(verts[indices[i + 1]]):
+						indexes.push_back(verts_dict[verts[indices[i + 1]]])
+					else:
+						vertices.push_back(verts[indices[i + 1]])
+						indexes.push_back(1 + offset)
+					
+					if verts_dict.has(verts[indices[i + 2]]):
+						indexes.push_back(verts_dict[verts[indices[i + 2]]])
+					else:
+						vertices.push_back(verts[indices[i + 2]])
+						indexes.push_back(2 + offset)
 					
 					# Remember the right hand rule
 					# This is the correct winding order for Godot (clockwise)
-					var normal_vector = (vertices[2 + offset] - vertices[0 + offset]).cross(
+					var normal = (vertices[2 + offset] - vertices[0 + offset]).cross(
 						vertices[1 + offset] - vertices[0 + offset]).normalized()
-					normals.push_back(normal_vector)
-					normals.push_back(normal_vector)
-					normals.push_back(normal_vector)
+					normals.push_back(normal)
+					normals.push_back(normal)
+					normals.push_back(normal)
+					
+					#normals_dict[vertices[0]].push_back(normal)
+					#normals_dict[vertices[1]].push_back(normal)
+					#normals_dict[vertices[2]].push_back(normal)
 					
 					offset += 3
 	
