@@ -5,7 +5,7 @@ extends Node3D
 var density = 25;
 var spacing = 1.0;
 
-const shader = preload("res://scalar-field-visualization.gdshader")
+const shader = preload("res://shaders/scalar-field-visualization.gdshader")
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:

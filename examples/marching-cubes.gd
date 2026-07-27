@@ -7,10 +7,14 @@ extends Node
 # in another sphere to act as a water. The result is a toy example of 
 # a procedural planet.
 
+# TODO Calculate normals using the gradient and finite difference
+
 var levels = 100
 var noise: Noise
 var iso_value = 0
 
+var ocean_shader = preload("res://shaders/ocean.gdshader")
+var land_shader = preload("res://shaders/land.gdshader")
 
 var edge_table = [
 0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
@@ -325,7 +329,7 @@ func sample_scalar_field(v: Vector3) -> float:
 	var center = Vector3(levels / 2, levels / 2, levels / 2)
 	var radius = levels / 2.25
 	
-	var noise_val = noise.get_noise_3dv(v) * 3.0
+	var noise_val = noise.get_noise_3dv(v) * 2.5
 	var sea_level = v.distance_to(center) - radius
 	
 	return sea_level + noise_val
@@ -338,6 +342,11 @@ func place_water():
 	ocean_shape.height = ocean_shape.radius * 2.0
 	ocean.mesh = ocean_shape
 	ocean.position = Vector3(levels / 2, levels / 2, levels / 2)
+	
+	var mat = ShaderMaterial.new()
+	mat.shader = ocean_shader
+	
+	ocean.set_surface_override_material(0, mat)
 	
 	add_child(ocean)
 
@@ -498,13 +507,18 @@ func polygonize():
 	var surface = MeshInstance3D.new()
 	surface.mesh = array_mesh
 	
+	var mat = ShaderMaterial.new()
+	mat.shader = land_shader
+	
+	surface.set_surface_override_material(0, mat)
+	
 	add_child(surface)
 
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	noise = FastNoiseLite.new()
-	noise.frequency = 0.025
+	noise.frequency = 0.03
 	
 	polygonize()
 	place_water()

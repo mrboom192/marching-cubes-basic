@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cf7vv0dlo47d"]
 
-[ext_resource type="Script" uid="uid://dmxa3hjwqyweg" path="res://uniform-grid.gd" id="1_3hmyw"]
+[ext_resource type="Script" uid="uid://dmxa3hjwqyweg" path="res://examples/uniform-grid.gd" id="1_3hmyw"]
 
 [node name="PointCloud" type="Node3D" unique_id=1801220944]
 script = ExtResource("1_3hmyw")

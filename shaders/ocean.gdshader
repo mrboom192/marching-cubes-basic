@@ -1,10 +1,8 @@
 shader_type spatial;
-render_mode unshaded;
-
-uniform vec3 position; 
 
 void fragment() {
-	ALBEDO = vec3(position.x * 0.05, position.y * 0.05, position.z * 0.05);
+	ALBEDO = vec3(0.0, 0.4, 1.0);
+	ROUGHNESS = 0.025;
 }
 
 //void light() {
