@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://dbbpjoiaedcac"]
 
 [ext_resource type="Script" uid="uid://cxuacjuaigvrt" path="res://marching-cubes.gd" id="1_113f8"]
-[ext_resource type="PackedScene" uid="uid://cf7vv0dlo47d" path="res://scalar-field-visualization.tscn" id="2_g0pya"]
 
 [node name="MarchingCubes" type="Node3D" unique_id=98003401]
 script = ExtResource("1_113f8")
@@ -10,6 +9,3 @@ script = ExtResource("1_113f8")
 transform = Transform3D(0.96991146, 0.103414, 0.22040313, -0.23345229, 0.13818239, 0.96249974, 0.06908011, -0.984993, 0.15816689, 20.772316, 5.8661766, 0)
 shadow_enabled = true
 sky_mode = 1
-
-[node name="PointCloud" parent="." unique_id=1801220944 instance=ExtResource("2_g0pya")]
-visible = false

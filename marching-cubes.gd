@@ -1,9 +1,16 @@
 @tool
 extends Node
 
-var levels = 50
+# Example of marching cubes from Paul Bourke's article
+# Implements marching cubes along with deduplicating vertices and smooth normals
+# The scalar field function is a signed distance field (SDF) of a sphere, and adds
+# in another sphere to act as a water. The result is a toy example of 
+# a procedural planet.
+
+var levels = 100
 var noise: Noise
 var iso_value = 0
+
 
 var edge_table = [
 0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
@@ -312,6 +319,29 @@ func interpolate(a: Vector3, b: Vector3, a_val: float, b_val: float) -> Vector3:
 	return a.lerp(b, mu)
 
 
+# For now, the scalar field is a sphere with noise on top of its implicit surface
+# Looks like a meatball
+func sample_scalar_field(v: Vector3) -> float:
+	var center = Vector3(levels / 2, levels / 2, levels / 2)
+	var radius = levels / 2.25
+	
+	var noise_val = noise.get_noise_3dv(v) * 3.0
+	var sea_level = v.distance_to(center) - radius
+	
+	return sea_level + noise_val
+
+
+func place_water():
+	var ocean = MeshInstance3D.new()
+	var ocean_shape = SphereMesh.new()
+	ocean_shape.radius = levels / 2.25
+	ocean_shape.height = ocean_shape.radius * 2.0
+	ocean.mesh = ocean_shape
+	ocean.position = Vector3(levels / 2, levels / 2, levels / 2)
+	
+	add_child(ocean)
+
+
 func polygonize():
 	var sampled_noise_dict: Dictionary[Vector3i, float] = {}
 	
@@ -319,7 +349,7 @@ func polygonize():
 	var verts_dict: Dictionary[Vector3, int] = {}
 	var normals_dict: Dictionary[Vector3, PackedVector3Array] = {}
 	
-	var surface_array = []
+	var surface_array := []
 	surface_array.resize(Mesh.ARRAY_MAX)
 	var vertices: PackedVector3Array
 	var indexes: PackedInt32Array
@@ -353,7 +383,8 @@ func polygonize():
 					else:
 						# Sample the iso-surface function
 						# In this case, its Godot's FastNoiseLite
-						var sampled = noise.get_noise_3dv(grid[i])
+						#var sampled = noise.get_noise_3dv(grid[i])
+						var sampled = sample_scalar_field(grid[i])
 						sampled_noise_dict[key] = sampled
 						vals[i] = sampled
 				
@@ -403,7 +434,7 @@ func polygonize():
 					if indices[i] == -1:
 						break
 					
-					var a = verts[indices[i    ]]
+					var a = verts[indices[i]]
 					if verts_dict.has(a):
 						indexes.push_back(verts_dict[a])
 					else:
@@ -473,6 +504,7 @@ func polygonize():
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	noise = FastNoiseLite.new()
-	noise.frequency = 0.05
+	noise.frequency = 0.025
 	
 	polygonize()
+	place_water()
