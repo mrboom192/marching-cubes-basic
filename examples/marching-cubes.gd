@@ -351,6 +351,21 @@ func place_water():
 	add_child(ocean)
 
 
+func gradient(p: Vector3) -> Vector3:
+	const e = 1.0
+	
+	return Vector3(
+		sample_scalar_field(p + Vector3(e,0,0))
+		- sample_scalar_field(p - Vector3(e,0,0)),
+		
+		sample_scalar_field(p + Vector3(0,e,0))
+		- sample_scalar_field(p - Vector3(0,e,0)),
+		
+		sample_scalar_field(p + Vector3(0,0,e))
+		- sample_scalar_field(p - Vector3(0,0,e))
+		).normalized()
+
+
 func polygonize():
 	var sampled_noise_dict: Dictionary[Vector3i, float] = {}
 	
@@ -495,7 +510,8 @@ func polygonize():
 		for n in normals_dict[v]:
 			sum += n
 		
-		normals.push_back((sum / normals_dict[v].size()).normalized())
+		#normals.push_back((sum / normals_dict[v].size()).normalized())
+		normals.push_back(gradient(v))
 	
 	surface_array[Mesh.ARRAY_VERTEX] = vertices
 	surface_array[Mesh.ARRAY_INDEX] = indexes
