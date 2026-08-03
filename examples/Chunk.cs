@@ -1,26 +1,15 @@
 using Godot;
 using System;
+using System.Numerics;
+using Vector3 = Godot.Vector3;
 
-readonly struct RegularCellData
+readonly struct RegularCellData(byte geometryCounts, byte[] vertexIndices)
 {
-    private readonly byte _geometryCounts;
-    private readonly byte[] _vertexIndex;
+    public int GetVertexCount() => geometryCounts >> 4;
 
-    public RegularCellData(byte geometryCounts, byte[] vertexIndex)
-    {
-        this._geometryCounts = geometryCounts;
-        this._vertexIndex = vertexIndex;
-    }
+    public int GetTriangleCount() => geometryCounts & 0x0F;
 
-    public long GetVertexCount()
-    {
-        return _geometryCounts >> 4;
-    }
-
-    public long GetTriangleCount()
-    {
-        return _geometryCounts & 0x0F;
-    }
+    public ReadOnlySpan<byte> GetVertexIndices() => vertexIndices;
 };
 
 [Tool]
@@ -32,7 +21,7 @@ public partial class Chunk : Node
     // just with different vertex locations. We combined those classes for this table so
     // that the class index ranges from 0 to 15.
 
-    private static readonly byte[] _regularCellClass =
+    private static readonly byte[] RegularCellClass =
     [
         0x00, 0x01, 0x01, 0x03, 0x01, 0x03, 0x02, 0x04, 0x01, 0x02, 0x03, 0x04, 0x03, 0x04, 0x04, 0x03,
         0x01, 0x03, 0x02, 0x04, 0x02, 0x04, 0x06, 0x0C, 0x02, 0x05, 0x05, 0x0B, 0x05, 0x0A, 0x07, 0x04,
@@ -56,7 +45,7 @@ public partial class Chunk : Node
     // The regularCellData table holds the triangulation data for all 16 distinct classes to
     // which a case can be mapped by the regularCellClass table.
 
-    private static readonly RegularCellData[] _regularCellData =
+    private static readonly RegularCellData[] RegularCellData =
     [
         new(0x00, []),
         new(0x31, [0, 1, 2]),
@@ -83,7 +72,7 @@ public partial class Chunk : Node
     // The low byte contains the indexes for the two endpoints of the edge on which the vertex lies,
     // as numbered in Figure 3.7. The high byte contains the vertex reuse data shown in Figure 3.8.	
 
-    private static readonly ushort[][] _regularVertexData =
+    private static readonly ushort[][] RegularVertexData =
     [
         [],
         [0x6201, 0x5102, 0x3304],
@@ -342,11 +331,28 @@ public partial class Chunk : Node
         [0x6201, 0x3304, 0x5102],
         []
     ];
+    
+    
+    // The corner offsets represents the correct ordering of corners as shown in
+    // Eric Lengyel's paper
+    private static readonly Vector3[] CornerOffsets =
+    [
+        new(0, 0, 0),
+        new(1, 0, 0),
+        new(0, 1, 0),
+        new(1, 1, 0),
+        new(0, 0, 1),
+        new(1, 0, 1),
+        new(0, 1, 1),
+        new(1, 1, 1),
+    ];
+        
 
     // Member variables here, example:
     private Chunk[] _chunks;
     private int _size = 16;
     private FastNoiseLite _noise;
+    private int _cellSize = 1;
 
 
     private void Polygonize()
@@ -357,7 +363,11 @@ public partial class Chunk : Node
             {
                 for (var z = 0; z < _size; z++)
                 {
-                    GD.Print(_noise.GetNoise3D(x, y, z));
+                    Vector3 voxelSample = new(x * _cellSize, y * _cellSize, z * _cellSize);
+                    foreach (var offset in CornerOffsets)
+                    {
+                        GD.Print(" The noise is " + _noise.GetNoise3Dv(voxelSample * offset));
+                    }
                 }
             }
         }
