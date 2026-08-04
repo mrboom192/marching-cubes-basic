@@ -20,7 +20,6 @@ public partial class Chunk : Node
     // modified Marching Cubes algorithm, a couple of them use the same exact triangulations,
     // just with different vertex locations. We combined those classes for this table so
     // that the class index ranges from 0 to 15.
-
     private static readonly byte[] RegularCellClass =
     [
         0x00, 0x01, 0x01, 0x03, 0x01, 0x03, 0x02, 0x04, 0x01, 0x02, 0x03, 0x04, 0x03, 0x04, 0x04, 0x03,
@@ -71,7 +70,6 @@ public partial class Chunk : Node
     // about whether a vertex can be reused from a neighboring cell. See Section 3.3 for details.
     // The low byte contains the indexes for the two endpoints of the edge on which the vertex lies,
     // as numbered in Figure 3.7. The high byte contains the vertex reuse data shown in Figure 3.8.	
-
     private static readonly ushort[][] RegularVertexData =
     [
         [],
@@ -349,11 +347,14 @@ public partial class Chunk : Node
         
 
     // Member variables here, example:
+    private const int NumCorners = 8;
     private Chunk[] _chunks;
     private int _size = 16;
     private FastNoiseLite _noise;
     private int _cellSize = 1;
-
+    private int[] _corner =  new int[NumCorners];
+    private const int IsoValue = 0;
+    private int _caseCode;
 
     private void Polygonize()
     {
@@ -364,9 +365,11 @@ public partial class Chunk : Node
                 for (var z = 0; z < _size; z++)
                 {
                     Vector3 voxelSample = new(x * _cellSize, y * _cellSize, z * _cellSize);
-                    foreach (var offset in CornerOffsets)
+                    for (var i = 0; i < NumCorners; i++)
                     {
-                        GD.Print(" The noise is " + _noise.GetNoise3Dv(voxelSample * offset));
+                        var samplePos = voxelSample + CornerOffsets[i] * _cellSize;
+                        _corner[i] = (int)MathF.Floor(_noise.GetNoise3Dv(samplePos));
+                        _caseCode |= 1 << i;
                     }
                 }
             }
