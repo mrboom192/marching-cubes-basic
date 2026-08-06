@@ -2,6 +2,8 @@ using Godot;
 using System;
 using System.Numerics;
 using Vector3 = Godot.Vector3;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 readonly struct RegularCellData(byte geometryCounts, byte[] vertexIndices)
 {
@@ -43,7 +45,6 @@ public partial class Chunk : Node
 
     // The regularCellData table holds the triangulation data for all 16 distinct classes to
     // which a case can be mapped by the regularCellClass table.
-
     private static readonly RegularCellData[] RegularCellData =
     [
         new(0x00, []),
@@ -329,8 +330,23 @@ public partial class Chunk : Node
         [0x6201, 0x3304, 0x5102],
         []
     ];
-    
-    
+
+
+    private const double InterpolationThreshold = 0.0001;
+    private static Vector3 Interpolate(Vector3 a, Vector3 b, float aVal, float bVal)
+    {
+        if (Math.Abs(IsoValue - aVal) < InterpolationThreshold)
+            return a;
+        if (Math.Abs(IsoValue - bVal) < InterpolationThreshold)
+            return b;
+        if (Math.Abs(aVal - bVal) < InterpolationThreshold)
+            return a;
+        
+        var mu = (IsoValue - aVal) /  (bVal - aVal);
+        return a.Lerp(b, mu);
+    }
+
+
     // The corner offsets represents the correct ordering of corners as shown in
     // Eric Lengyel's paper
     private static readonly Vector3[] CornerOffsets =
@@ -344,39 +360,89 @@ public partial class Chunk : Node
         new(0, 1, 1),
         new(1, 1, 1),
     ];
-        
+
 
     // Member variables here, example:
     private const int NumCorners = 8;
-    private Chunk[] _chunks;
     private int _size = 16;
     private FastNoiseLite _noise;
     private int _cellSize = 1;
-    private int[] _corner =  new int[NumCorners];
     private const int IsoValue = 0;
-    private int _caseCode;
+    private Vector3[,] _cells = new Vector3[4096, 12];
 
     private void Polygonize()
     {
+        var vertices = new List<Vector3>();
+        var indices = new List<int>();
+        
         for (var x = 0; x < _size; x++)
         {
             for (var y = 0; y < _size; y++)
             {
                 for (var z = 0; z < _size; z++)
                 {
-                    Vector3 voxelSample = new(x * _cellSize, y * _cellSize, z * _cellSize);
+                    Vector3 minCorner = new(x * _cellSize, y * _cellSize, z * _cellSize);
+                    var corners = new float[NumCorners];
+                    var caseCode = 0;
+
                     for (var i = 0; i < NumCorners; i++)
                     {
-                        var samplePos = voxelSample + CornerOffsets[i] * _cellSize;
-                        _corner[i] = (int)MathF.Floor(_noise.GetNoise3Dv(samplePos));
-                        _caseCode |= 1 << i;
+                        var corner = minCorner + CornerOffsets[i] * _cellSize;
+                        corners[i] = _noise.GetNoise3Dv(corner);
+                        
+                        caseCode |= (corners[i] < IsoValue ? 1 : 0) << i;
+                    }
+
+                    if (caseCode is 0 or 255)
+                        continue;
+
+                    var descriptors = RegularVertexData[caseCode];
+                    var equivalenceClass = RegularCellClass[caseCode];
+                    var cellId = (z << 8) | (y << 4) | x;
+                    var cell = RegularCellData[equivalenceClass];
+
+                    foreach (var descriptor in descriptors)
+                    {
+                        var flags = descriptor >> 12;
+                        var offset = (flags & 0x1) | ((flags & 0x2) << 3) | ((flags & 0x4) << 6);
+                        var prevCell = cellId - offset;
+                        var cornerIdx = (descriptor >> 8) & 0x0F;
+
+                        if (prevCell >= 0 && prevCell < _cells.Length)
+                        {
+                            // Add vertex and it's index
+                            vertices.Add(_cells[prevCell, cornerIdx]);
+                            continue;
+                        }
+                        
+                        var a = descriptor & 0x0F;
+                        var b = descriptor >> 4 & 0x0F;
+                        
+                        var edgeA = minCorner + CornerOffsets[a] * _cellSize;
+                        var edgeB = minCorner + CornerOffsets[b] * _cellSize;
+
+                        var vertex = Interpolate(edgeA, edgeB, corners[a], corners[b]);
+                        _cells[cellId , cornerIdx] = vertex;
+                        vertices.Add(vertex);
                     }
                 }
             }
         }
+
+        foreach (var vert in vertices)
+        {
+            var sphere = new MeshInstance3D();
+            var mesh = new SphereMesh();
+            mesh.Rings = 4;
+            mesh.RadialSegments = 4;
+            sphere.Mesh = mesh;
+            sphere.Position = vert;
+            sphere.Scale *= 0.5f;
+            AddChild(sphere);
+        }
     }
 
-
+    
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
