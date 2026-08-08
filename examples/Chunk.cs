@@ -1,9 +1,9 @@
 using Godot;
 using System;
-using System.Numerics;
 using Vector3 = Godot.Vector3;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Collections;
+
 
 readonly struct RegularCellData(byte geometryCounts, byte[] vertexIndices)
 {
@@ -333,6 +333,7 @@ public partial class Chunk : Node
 
 
     private const double InterpolationThreshold = 0.0001;
+
     private static Vector3 Interpolate(Vector3 a, Vector3 b, float aVal, float bVal)
     {
         if (Math.Abs(IsoValue - aVal) < InterpolationThreshold)
@@ -341,8 +342,8 @@ public partial class Chunk : Node
             return b;
         if (Math.Abs(aVal - bVal) < InterpolationThreshold)
             return a;
-        
-        var mu = (IsoValue - aVal) /  (bVal - aVal);
+
+        var mu = (IsoValue - aVal) / (bVal - aVal);
         return a.Lerp(b, mu);
     }
 
@@ -374,7 +375,8 @@ public partial class Chunk : Node
     {
         var vertices = new List<Vector3>();
         var indices = new List<int>();
-        
+
+        BitArray emptyFlags = new BitArray(4096);
         for (var x = 0; x < _size; x++)
         {
             for (var y = 0; y < _size; y++)
@@ -389,7 +391,7 @@ public partial class Chunk : Node
                     {
                         var corner = minCorner + CornerOffsets[i] * _cellSize;
                         corners[i] = _noise.GetNoise3Dv(corner);
-                        
+
                         caseCode |= (corners[i] < IsoValue ? 1 : 0) << i;
                     }
 
@@ -405,49 +407,78 @@ public partial class Chunk : Node
                     {
                         var flags = descriptor >> 12;
                         var offset = (flags & 0x1) | ((flags & 0x2) << 3) | ((flags & 0x4) << 6);
-                        var prevCell = cellId - offset;
+                        var prevCellId = cellId - offset;
                         var cornerIdx = (descriptor >> 8) & 0x0F;
 
-                        if (prevCell >= 0 && prevCell < _cells.Length)
+                        // prevCell will always be less than _cells.Length, so we save a comparison
+                        if (prevCellId >= 0)
                         {
                             // Add vertex and it's index
-                            vertices.Add(_cells[prevCell, cornerIdx]);
+                            var prevVertex = _cells[prevCellId, cornerIdx];
+                            _cells[cellId, cornerIdx] = prevVertex;
+                            vertices.Add(prevVertex);
                             continue;
                         }
-                        
+
                         var a = descriptor & 0x0F;
                         var b = descriptor >> 4 & 0x0F;
-                        
+
                         var edgeA = minCorner + CornerOffsets[a] * _cellSize;
                         var edgeB = minCorner + CornerOffsets[b] * _cellSize;
 
                         var vertex = Interpolate(edgeA, edgeB, corners[a], corners[b]);
-                        _cells[cellId , cornerIdx] = vertex;
+                        _cells[cellId, cornerIdx] = vertex;
                         vertices.Add(vertex);
                     }
                 }
             }
         }
 
+        var sphereMesh = new SphereMesh
+        {
+            Rings = 4,
+            RadialSegments = 4,
+            Radius = 0.2f,
+            Height = 0.4f
+        };
+
+        var surfaceTool = new SurfaceTool();
+        surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
+
         foreach (var vert in vertices)
         {
-            var sphere = new MeshInstance3D();
-            var mesh = new SphereMesh();
-            mesh.Rings = 4;
-            mesh.RadialSegments = 4;
-            sphere.Mesh = mesh;
-            sphere.Position = vert;
-            sphere.Scale *= 0.5f;
-            AddChild(sphere);
+            var transform = new Transform3D(
+                Basis.Identity,
+                vert
+            );
+
+            surfaceTool.AppendFrom(
+                sphereMesh,
+                0, // SphereMesh has surface 0
+                transform
+            );
         }
+
+        // Combine everything into ONE ArrayMesh.
+        ArrayMesh combinedMesh = surfaceTool.Commit();
+
+        // And ONE MeshInstance3D.
+        var meshInstance = new MeshInstance3D
+        {
+            Mesh = combinedMesh
+        };
+
+        AddChild(meshInstance);
     }
 
-    
+
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
-        _noise = new FastNoiseLite();
-        _noise.Frequency = 0.5f;
+        _noise = new FastNoiseLite
+        {
+            Frequency = 0.05f
+        };
         Polygonize();
     }
 
