@@ -369,7 +369,7 @@ public partial class Chunk : Node
     private FastNoiseLite _noise;
     private int _cellSize = 1;
     private const int IsoValue = 0;
-    private Vector3[,] _cells = new Vector3[4096, 12];
+    private readonly Vector3?[,] _cells = new Vector3?[4096, 12];
 
     private void Polygonize()
     {
@@ -411,12 +411,12 @@ public partial class Chunk : Node
                         var cornerIdx = (descriptor >> 8) & 0x0F;
 
                         // prevCell will always be less than _cells.Length, so we save a comparison
-                        if (prevCellId >= 0)
+                        if (prevCellId >= 0 &&
+                            _cells[prevCellId, cornerIdx] is not null)
                         {
-                            // Add vertex and it's index
-                            var prevVertex = _cells[prevCellId, cornerIdx];
-                            _cells[cellId, cornerIdx] = prevVertex;
-                            vertices.Add(prevVertex);
+                            // var prevVertex = _cells[prevCellId, cornerIdx];
+
+                            // _cells[cellId, cornerIdx] = prevVertex; // Add index instead later on
                             continue;
                         }
 
@@ -438,8 +438,8 @@ public partial class Chunk : Node
         {
             Rings = 4,
             RadialSegments = 4,
-            Radius = 0.2f,
-            Height = 0.4f
+            Radius = 0.1f,
+            Height = 0.2f
         };
 
         var surfaceTool = new SurfaceTool();
