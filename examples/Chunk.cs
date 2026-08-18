@@ -2,50 +2,32 @@ using Godot;
 using System;
 using Vector3 = Godot.Vector3;
 using System.Collections.Generic;
-using System.Collections;
-
-
-readonly struct RegularCellData(byte geometryCounts, byte[] vertexIndices)
-{
-    public int GetVertexCount() => geometryCounts >> 4;
-
-    public int GetTriangleCount() => geometryCounts & 0x0F;
-
-    public ReadOnlySpan<byte> GetVertexIndices() => vertexIndices;
-};
 
 [Tool]
 public partial class Chunk : Node
 {
-    // The regularCellClass table maps an 8-bit regular Marching Cubes case index to
-    // an equivalence class index. Even though there are 18 equivalence classes in our
-    // modified Marching Cubes algorithm, a couple of them use the same exact triangulations,
-    // just with different vertex locations. We combined those classes for this table so
-    // that the class index ranges from 0 to 15.
-    private static readonly byte[] RegularCellClass =
-    [
-        0x00, 0x01, 0x01, 0x03, 0x01, 0x03, 0x02, 0x04, 0x01, 0x02, 0x03, 0x04, 0x03, 0x04, 0x04, 0x03,
-        0x01, 0x03, 0x02, 0x04, 0x02, 0x04, 0x06, 0x0C, 0x02, 0x05, 0x05, 0x0B, 0x05, 0x0A, 0x07, 0x04,
-        0x01, 0x02, 0x03, 0x04, 0x02, 0x05, 0x05, 0x0A, 0x02, 0x06, 0x04, 0x0C, 0x05, 0x07, 0x0B, 0x04,
-        0x03, 0x04, 0x04, 0x03, 0x05, 0x0B, 0x07, 0x04, 0x05, 0x07, 0x0A, 0x04, 0x08, 0x0E, 0x0E, 0x03,
-        0x01, 0x02, 0x02, 0x05, 0x03, 0x04, 0x05, 0x0B, 0x02, 0x06, 0x05, 0x07, 0x04, 0x0C, 0x0A, 0x04,
-        0x03, 0x04, 0x05, 0x0A, 0x04, 0x03, 0x07, 0x04, 0x05, 0x07, 0x08, 0x0E, 0x0B, 0x04, 0x0E, 0x03,
-        0x02, 0x06, 0x05, 0x07, 0x05, 0x07, 0x08, 0x0E, 0x06, 0x09, 0x07, 0x0F, 0x07, 0x0F, 0x0E, 0x0D,
-        0x04, 0x0C, 0x0B, 0x04, 0x0A, 0x04, 0x0E, 0x03, 0x07, 0x0F, 0x0E, 0x0D, 0x0E, 0x0D, 0x02, 0x01,
-        0x01, 0x02, 0x02, 0x05, 0x02, 0x05, 0x06, 0x07, 0x03, 0x05, 0x04, 0x0A, 0x04, 0x0B, 0x0C, 0x04,
-        0x02, 0x05, 0x06, 0x07, 0x06, 0x07, 0x09, 0x0F, 0x05, 0x08, 0x07, 0x0E, 0x07, 0x0E, 0x0F, 0x0D,
-        0x03, 0x05, 0x04, 0x0B, 0x05, 0x08, 0x07, 0x0E, 0x04, 0x07, 0x03, 0x04, 0x0A, 0x0E, 0x04, 0x03,
-        0x04, 0x0A, 0x0C, 0x04, 0x07, 0x0E, 0x0F, 0x0D, 0x0B, 0x0E, 0x04, 0x03, 0x0E, 0x02, 0x0D, 0x01,
-        0x03, 0x05, 0x05, 0x08, 0x04, 0x0A, 0x07, 0x0E, 0x04, 0x07, 0x0B, 0x0E, 0x03, 0x04, 0x04, 0x03,
-        0x04, 0x0B, 0x07, 0x0E, 0x0C, 0x04, 0x0F, 0x0D, 0x0A, 0x0E, 0x0E, 0x02, 0x04, 0x03, 0x0D, 0x01,
-        0x04, 0x07, 0x0A, 0x0E, 0x0B, 0x0E, 0x0E, 0x02, 0x0C, 0x0F, 0x04, 0x0D, 0x04, 0x0D, 0x03, 0x01,
-        0x03, 0x04, 0x04, 0x03, 0x04, 0x03, 0x0D, 0x01, 0x04, 0x0D, 0x03, 0x01, 0x03, 0x01, 0x01, 0x00
-    ];
+    private readonly struct VertexData(Vector3 position, short index, RegularCell cellData)
+    {
+        public Vector3 GetPosition() => position;
+    
+        public short GetIndex() => index;
 
+        public RegularCell GetCellData() => cellData;
+    }
+    
+    // Used for the triangulation data array below
+    private readonly struct RegularCell(byte geometryCounts, byte[] vertexIndices)
+    {
+        public int GetVertexCount() => geometryCounts >> 4;
+
+        public int GetTriangleCount() => geometryCounts & 0x0F;
+
+        public ReadOnlySpan<byte> GetVertexIndices() => vertexIndices;
+    };
 
     // The regularCellData table holds the triangulation data for all 16 distinct classes to
-    // which a case can be mapped by the regularCellClass table.
-    private static readonly RegularCellData[] RegularCellData =
+    // which a case can be mapped by the RegularCellEquivalenceClass table.
+    private static readonly RegularCell[] RegularCellData =
     [
         new(0x00, []),
         new(0x31, [0, 1, 2]),
@@ -64,8 +46,32 @@ public partial class Chunk : Node
         new(0x75, [0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6]),
         new(0x95, [0, 4, 5, 0, 3, 4, 0, 1, 3, 1, 2, 3, 6, 7, 8])
     ];
-
-
+    
+    // The RegularCellEquivalenceClass table maps an 8-bit regular Marching Cubes case index to
+    // an equivalence class index. Even though there are 18 equivalence classes in our
+    // modified Marching Cubes algorithm, a couple of them use the same exact triangulations,
+    // just with different vertex locations. We combined those classes for this table so
+    // that the class index ranges from 0 to 15.
+    private static readonly byte[] RegularCellEquivalenceClass =
+    [
+        0x00, 0x01, 0x01, 0x03, 0x01, 0x03, 0x02, 0x04, 0x01, 0x02, 0x03, 0x04, 0x03, 0x04, 0x04, 0x03,
+        0x01, 0x03, 0x02, 0x04, 0x02, 0x04, 0x06, 0x0C, 0x02, 0x05, 0x05, 0x0B, 0x05, 0x0A, 0x07, 0x04,
+        0x01, 0x02, 0x03, 0x04, 0x02, 0x05, 0x05, 0x0A, 0x02, 0x06, 0x04, 0x0C, 0x05, 0x07, 0x0B, 0x04,
+        0x03, 0x04, 0x04, 0x03, 0x05, 0x0B, 0x07, 0x04, 0x05, 0x07, 0x0A, 0x04, 0x08, 0x0E, 0x0E, 0x03,
+        0x01, 0x02, 0x02, 0x05, 0x03, 0x04, 0x05, 0x0B, 0x02, 0x06, 0x05, 0x07, 0x04, 0x0C, 0x0A, 0x04,
+        0x03, 0x04, 0x05, 0x0A, 0x04, 0x03, 0x07, 0x04, 0x05, 0x07, 0x08, 0x0E, 0x0B, 0x04, 0x0E, 0x03,
+        0x02, 0x06, 0x05, 0x07, 0x05, 0x07, 0x08, 0x0E, 0x06, 0x09, 0x07, 0x0F, 0x07, 0x0F, 0x0E, 0x0D,
+        0x04, 0x0C, 0x0B, 0x04, 0x0A, 0x04, 0x0E, 0x03, 0x07, 0x0F, 0x0E, 0x0D, 0x0E, 0x0D, 0x02, 0x01,
+        0x01, 0x02, 0x02, 0x05, 0x02, 0x05, 0x06, 0x07, 0x03, 0x05, 0x04, 0x0A, 0x04, 0x0B, 0x0C, 0x04,
+        0x02, 0x05, 0x06, 0x07, 0x06, 0x07, 0x09, 0x0F, 0x05, 0x08, 0x07, 0x0E, 0x07, 0x0E, 0x0F, 0x0D,
+        0x03, 0x05, 0x04, 0x0B, 0x05, 0x08, 0x07, 0x0E, 0x04, 0x07, 0x03, 0x04, 0x0A, 0x0E, 0x04, 0x03,
+        0x04, 0x0A, 0x0C, 0x04, 0x07, 0x0E, 0x0F, 0x0D, 0x0B, 0x0E, 0x04, 0x03, 0x0E, 0x02, 0x0D, 0x01,
+        0x03, 0x05, 0x05, 0x08, 0x04, 0x0A, 0x07, 0x0E, 0x04, 0x07, 0x0B, 0x0E, 0x03, 0x04, 0x04, 0x03,
+        0x04, 0x0B, 0x07, 0x0E, 0x0C, 0x04, 0x0F, 0x0D, 0x0A, 0x0E, 0x0E, 0x02, 0x04, 0x03, 0x0D, 0x01,
+        0x04, 0x07, 0x0A, 0x0E, 0x0B, 0x0E, 0x0E, 0x02, 0x0C, 0x0F, 0x04, 0x0D, 0x04, 0x0D, 0x03, 0x01,
+        0x03, 0x04, 0x04, 0x03, 0x04, 0x03, 0x0D, 0x01, 0x04, 0x0D, 0x03, 0x01, 0x03, 0x01, 0x01, 0x00
+    ];
+    
     // The regularVertexData table gives the vertex locations for every one of the 256 possible
     // cases in the modified Marching Cubes algorithm. Each 16-bit value also provides information
     // about whether a vertex can be reused from a neighboring cell. See Section 3.3 for details.
@@ -330,24 +336,7 @@ public partial class Chunk : Node
         [0x6201, 0x3304, 0x5102],
         []
     ];
-
-
-    private const double InterpolationThreshold = 0.0001;
-
-    private static Vector3 Interpolate(Vector3 a, Vector3 b, float aVal, float bVal)
-    {
-        if (Math.Abs(IsoValue - aVal) < InterpolationThreshold)
-            return a;
-        if (Math.Abs(IsoValue - bVal) < InterpolationThreshold)
-            return b;
-        if (Math.Abs(aVal - bVal) < InterpolationThreshold)
-            return a;
-
-        var mu = (IsoValue - aVal) / (bVal - aVal);
-        return a.Lerp(b, mu);
-    }
-
-
+    
     // The corner offsets represents the correct ordering of corners as shown in
     // Eric Lengyel's paper
     private static readonly Vector3[] CornerOffsets =
@@ -364,61 +353,60 @@ public partial class Chunk : Node
 
 
     // Member variables here, example:
-    private const int NumCorners = 8;
     private int _size = 16;
     private FastNoiseLite _noise;
     private int _cellSize = 1;
     private const int IsoValue = 0;
-    private readonly Vector3?[,] _cells = new Vector3?[4096, 12];
+    private readonly VertexData?[] _cells = new VertexData?[4096];
 
     private void Polygonize()
     {
-        var vertices = new List<Vector3>();
-        var indices = new List<int>();
+        List<Vector3> vertices = [];
+        List<Vector3> normals = [];
+        List<int> indices = [];
 
-        BitArray emptyFlags = new BitArray(4096);
+        var offset = 0;
         for (var x = 0; x < _size; x++)
         {
             for (var y = 0; y < _size; y++)
             {
                 for (var z = 0; z < _size; z++)
                 {
+                    // Find the 0 corner, as listed in transvoxel paper
                     Vector3 minCorner = new(x * _cellSize, y * _cellSize, z * _cellSize);
-                    var corners = new float[NumCorners];
+                    var corners = new float[8];
                     var caseCode = 0;
 
-                    for (var i = 0; i < NumCorners; i++)
+                    for (var i = 0; i < corners.Length; i++)
                     {
                         var corner = minCorner + CornerOffsets[i] * _cellSize;
                         corners[i] = _noise.GetNoise3Dv(corner);
 
                         caseCode |= (corners[i] < IsoValue ? 1 : 0) << i;
                     }
-
-                    if (caseCode is 0 or 255)
+                    
+                    var equivalenceClass = RegularCellEquivalenceClass[caseCode];
+                    var cell = RegularCellData[equivalenceClass];
+                    if (cell.GetVertexCount() is 0)
                         continue;
 
                     var descriptors = RegularVertexData[caseCode];
-                    var equivalenceClass = RegularCellClass[caseCode];
                     var cellId = (z << 8) | (y << 4) | x;
-                    var cell = RegularCellData[equivalenceClass];
-
+                    
+                    // Add in vertices
                     foreach (var descriptor in descriptors)
                     {
                         var flags = descriptor >> 12;
-                        var offset = (flags & 0x1) | ((flags & 0x2) << 3) | ((flags & 0x4) << 6);
-                        var prevCellId = cellId - offset;
+                        var prevCellId = cellId - (flags & 0x1) | ((flags & 0x2) << 3) | ((flags & 0x4) << 6);
                         var cornerIdx = (descriptor >> 8) & 0x0F;
 
                         // prevCell will always be less than _cells.Length, so we save a comparison
-                        if (prevCellId >= 0 &&
-                            _cells[prevCellId, cornerIdx] is not null)
-                        {
-                            // var prevVertex = _cells[prevCellId, cornerIdx];
-
-                            // _cells[cellId, cornerIdx] = prevVertex; // Add index instead later on
-                            continue;
-                        }
+                        // if (prevCellId >= 0 &&
+                            //_cells[prevCellId, cornerIdx] is { } vertexData)
+                        // {
+                        //    indices.Add(vertexData.GetIndex());
+                        //    continue;
+                        //}
 
                         var a = descriptor & 0x0F;
                         var b = descriptor >> 4 & 0x0F;
@@ -427,57 +415,68 @@ public partial class Chunk : Node
                         var edgeB = minCorner + CornerOffsets[b] * _cellSize;
 
                         var vertex = Interpolate(edgeA, edgeB, corners[a], corners[b]);
-                        _cells[cellId, cornerIdx] = vertex;
+                        // _cells[cellId, cornerIdx] = new VertexData(vertex, (short)indices.Count);
                         vertices.Add(vertex);
+                        normals.Add(vertex);
                     }
+                    
+                    // Add in vertex indices for mesh creation
+                    var cellIndices = cell.GetVertexIndices();
+                    var max = 0;
+                    for (var i = cellIndices.Length - 1; i >= 0; i--)
+                    {
+                        indices.Add(cellIndices[i] + offset);
+                        max = Math.Max(max, cellIndices[i]);
+                    }
+                    offset += max + 1;
                 }
             }
         }
 
-        var sphereMesh = new SphereMesh
+        Godot.Collections.Array surfaceArray = [];
+        surfaceArray.Resize((int)Godot.Mesh.ArrayType.Max);
+
+        surfaceArray[(int)Mesh.ArrayType.Vertex] = vertices.ToArray();
+        surfaceArray[(int)Mesh.ArrayType.Index] = indices.ToArray();
+        surfaceArray[(int)Mesh.ArrayType.Normal] = normals.ToArray();
+
+        var arrMesh = new ArrayMesh();
+
+        arrMesh.AddSurfaceFromArrays(
+            Godot.Mesh.PrimitiveType.Triangles,
+            surfaceArray
+        );
+
+        var mesh = new MeshInstance3D
         {
-            Rings = 4,
-            RadialSegments = 4,
-            Radius = 0.1f,
-            Height = 0.2f
+            Mesh = arrMesh
         };
-
-        var surfaceTool = new SurfaceTool();
-        surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
-
-        foreach (var vert in vertices)
-        {
-            var transform = new Transform3D(
-                Basis.Identity,
-                vert
-            );
-
-            surfaceTool.AppendFrom(
-                sphereMesh,
-                0, // SphereMesh has surface 0
-                transform
-            );
-        }
-
-        // Combine everything into ONE ArrayMesh.
-        ArrayMesh combinedMesh = surfaceTool.Commit();
-
-        // And ONE MeshInstance3D.
-        var meshInstance = new MeshInstance3D
-        {
-            Mesh = combinedMesh
-        };
-
-        AddChild(meshInstance);
+        
+        AddChild(mesh);
+        GD.Print(mesh.Mesh.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length);
     }
+    
+    private const double InterpolationThreshold = 0.0001;
 
+    private static Vector3 Interpolate(Vector3 a, Vector3 b, float aVal, float bVal)
+    {
+        if (Math.Abs(IsoValue - aVal) < InterpolationThreshold)
+            return a;
+        if (Math.Abs(IsoValue - bVal) < InterpolationThreshold)
+            return b;
+        if (Math.Abs(aVal - bVal) < InterpolationThreshold)
+            return a;
+
+        var mu = (IsoValue - aVal) / (bVal - aVal);
+        return a.Lerp(b, mu);
+    }
 
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
         _noise = new FastNoiseLite
         {
-            Frequency = 0.05f
+            Frequency = 0.1f
         };
         Polygonize();
     }
