@@ -355,31 +355,31 @@ public partial class Chunk : Node
     // Member variables here, example:
     private int _size = 16;
     private FastNoiseLite _noise;
-    private int _cellSize = 1;
     private const int IsoValue = 0;
     private readonly VertexData?[] _cells = new VertexData?[4096];
 
-    private void Polygonize()
+    // TODO: Fix how cell size is currently being calculated
+    private void Polygonize(Vector3I pos, int cellSize = 1)
     {
         List<Vector3> vertices = [];
         List<Vector3> normals = [];
         List<int> indices = [];
 
         var offset = 0;
-        for (var x = 0; x < _size; x++)
+        for (var x = pos.X; x < pos.X + _size; x++)
         {
-            for (var y = 0; y < _size; y++)
+            for (var y = pos.Y; y < pos.Y + _size; y++)
             {
-                for (var z = 0; z < _size; z++)
+                for (var z = pos.Z; z < pos.Z + _size; z++)
                 {
                     // Find the 0 corner, as listed in transvoxel paper
-                    Vector3 minCorner = new(x * _cellSize, y * _cellSize, z * _cellSize);
+                    Vector3 minCorner = new(x * cellSize, y * cellSize, z * cellSize);
                     var corners = new float[8];
                     var caseCode = 0;
 
                     for (var i = 0; i < corners.Length; i++)
                     {
-                        var corner = minCorner + CornerOffsets[i] * _cellSize;
+                        var corner = minCorner + CornerOffsets[i] * cellSize;
                         corners[i] = _noise.GetNoise3Dv(corner);
 
                         caseCode |= (corners[i] < IsoValue ? 1 : 0) << i;
@@ -411,8 +411,8 @@ public partial class Chunk : Node
                         var a = descriptor & 0x0F;
                         var b = descriptor >> 4 & 0x0F;
 
-                        var edgeA = minCorner + CornerOffsets[a] * _cellSize;
-                        var edgeB = minCorner + CornerOffsets[b] * _cellSize;
+                        var edgeA = minCorner + CornerOffsets[a] * cellSize;
+                        var edgeB = minCorner + CornerOffsets[b] * cellSize;
 
                         var vertex = Interpolate(edgeA, edgeB, corners[a], corners[b]);
                         // _cells[cellId, cornerIdx] = new VertexData(vertex, (short)indices.Count);
@@ -478,7 +478,15 @@ public partial class Chunk : Node
         {
             Frequency = 0.1f
         };
-        Polygonize();
+        Polygonize(new Vector3I(0,0,0), 1);
+        Polygonize(new Vector3I(16,0,0), 1);
+        Polygonize(new Vector3I(0,16,0), 1);
+        Polygonize(new Vector3I(0,0,16), 1);
+        Polygonize(new Vector3I(0,16,16), 1);
+        Polygonize(new Vector3I(16,16,0), 1);
+        Polygonize(new Vector3I(16,0,16), 1);
+        Polygonize(new Vector3I(16,16,16), 1);
+        Polygonize(new Vector3I(16,0,0), 2);
     }
 
     // Called every frame. 'delta' is the elapsed time since the previous frame.
