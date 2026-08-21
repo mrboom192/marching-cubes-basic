@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://ccyemve4ws2he"]
-
-[ext_resource type="Script" uid="uid://3oj0odxxj66w" path="res://examples/Chunk.cs" id="1_7fqot"]
-
-[node name="CsharpTest" type="Node3D" unique_id=686099292]
-script = ExtResource("1_7fqot")

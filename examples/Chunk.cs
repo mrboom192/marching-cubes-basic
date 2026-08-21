@@ -1,11 +1,16 @@
-using Godot;
 using System;
-using Vector3 = Godot.Vector3;
 using System.Collections.Generic;
+using Godot;
+using Vector3 = Godot.Vector3;
+
+namespace marchingcubesbasic.examples;
 
 [Tool]
-public partial class Chunk : Node
+public partial class Chunk(Vector3I position, int scale) : Node
 {
+    private Vector3I _position = position;
+    private int _scale = scale;
+
     private readonly struct VertexData(Vector3 position, short index, RegularCell cellData)
     {
         public Vector3 GetPosition() => position;
@@ -359,27 +364,27 @@ public partial class Chunk : Node
     private readonly VertexData?[] _cells = new VertexData?[4096];
 
     // TODO: Fix how cell size is currently being calculated
-    private void Polygonize(Vector3I pos, int cellSize = 1)
+    private void Polygonize()
     {
         List<Vector3> vertices = [];
         List<Vector3> normals = [];
         List<int> indices = [];
 
         var offset = 0;
-        for (var x = pos.X; x < pos.X + _size; x++)
+        for (var x = _position.X; x < _position.X + _size; x++)
         {
-            for (var y = pos.Y; y < pos.Y + _size; y++)
+            for (var y = _position.Y; y < _position.Y + _size; y++)
             {
-                for (var z = pos.Z; z < pos.Z + _size; z++)
+                for (var z = _position.Z; z < _position.Z + _size; z++)
                 {
                     // Find the 0 corner, as listed in transvoxel paper
-                    Vector3 minCorner = new(x * cellSize, y * cellSize, z * cellSize);
+                    Vector3 minCorner = new(x * _scale, y * _scale, z * _scale);
                     var corners = new float[8];
                     var caseCode = 0;
 
                     for (var i = 0; i < corners.Length; i++)
                     {
-                        var corner = minCorner + CornerOffsets[i] * cellSize;
+                        var corner = minCorner + CornerOffsets[i] * _scale;
                         corners[i] = _noise.GetNoise3Dv(corner);
 
                         caseCode |= (corners[i] < IsoValue ? 1 : 0) << i;
@@ -402,7 +407,7 @@ public partial class Chunk : Node
 
                         // prevCell will always be less than _cells.Length, so we save a comparison
                         // if (prevCellId >= 0 &&
-                            //_cells[prevCellId, cornerIdx] is { } vertexData)
+                        //_cells[prevCellId, cornerIdx] is { } vertexData)
                         // {
                         //    indices.Add(vertexData.GetIndex());
                         //    continue;
@@ -411,8 +416,8 @@ public partial class Chunk : Node
                         var a = descriptor & 0x0F;
                         var b = descriptor >> 4 & 0x0F;
 
-                        var edgeA = minCorner + CornerOffsets[a] * cellSize;
-                        var edgeB = minCorner + CornerOffsets[b] * cellSize;
+                        var edgeA = minCorner + CornerOffsets[a] * _scale;
+                        var edgeB = minCorner + CornerOffsets[b] * _scale;
 
                         var vertex = Interpolate(edgeA, edgeB, corners[a], corners[b]);
                         // _cells[cellId, cornerIdx] = new VertexData(vertex, (short)indices.Count);
@@ -478,19 +483,6 @@ public partial class Chunk : Node
         {
             Frequency = 0.1f
         };
-        Polygonize(new Vector3I(0,0,0), 1);
-        Polygonize(new Vector3I(16,0,0), 1);
-        Polygonize(new Vector3I(0,16,0), 1);
-        Polygonize(new Vector3I(0,0,16), 1);
-        Polygonize(new Vector3I(0,16,16), 1);
-        Polygonize(new Vector3I(16,16,0), 1);
-        Polygonize(new Vector3I(16,0,16), 1);
-        Polygonize(new Vector3I(16,16,16), 1);
-        Polygonize(new Vector3I(16,0,0), 2);
-    }
-
-    // Called every frame. 'delta' is the elapsed time since the previous frame.
-    public override void _Process(double delta)
-    {
+        Polygonize();
     }
 }
