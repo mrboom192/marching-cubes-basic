@@ -11,6 +11,7 @@ public partial class Chunk(Vector3I position, int scale) : Node
     private Vector3I _position = position;
     private int _scale = scale;
 
+    // TODO: Work on a 4096 sized array to be used for vertex reuse
     private readonly struct VertexData(Vector3 position, short index, RegularCell cellData)
     {
         public Vector3 GetPosition() => position;
@@ -356,11 +357,10 @@ public partial class Chunk(Vector3I position, int scale) : Node
         new(1, 1, 1),
     ];
 
-
     // Member variables here, example:
+    private const int IsoValue = 0; 
     private int _size = 16;
     private FastNoiseLite _noise;
-    private const int IsoValue = 0;
     private readonly VertexData?[] _cells = new VertexData?[4096];
 
     // TODO: Fix how cell size is currently being calculated
