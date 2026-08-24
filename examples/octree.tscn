@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://ccyemve4ws2he"]
 
-[ext_resource type="Script" uid="uid://bgnr5k7det0q6" path="res://examples/Example.cs" id="1_7fqot"]
+[ext_resource type="Script" uid="uid://bgnr5k7det0q6" path="res://examples/Octree.cs" id="1_rplru"]
 
 [sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_41lsu"]
 
@@ -12,7 +12,7 @@ background_mode = 2
 sky = SubResource("Sky_iqg6d")
 
 [node name="Example" type="Node3D" unique_id=686099292]
-script = ExtResource("1_7fqot")
+script = ExtResource("1_rplru")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=521287232]
 environment = SubResource("Environment_cnci3")

@@ -360,11 +360,10 @@ public partial class Chunk(Vector3I position, int scale) : Node
     // Member variables here, example:
     private const int IsoValue = 0; 
     private int _size = 16;
-    private FastNoiseLite _noise;
     private readonly VertexData?[] _cells = new VertexData?[4096];
 
     // TODO: Fix how cell size is currently being calculated
-    private void Polygonize()
+    private void Polygonize(ProceduralWorld sdf)
     {
         List<Vector3> vertices = [];
         List<Vector3> normals = [];
@@ -385,7 +384,7 @@ public partial class Chunk(Vector3I position, int scale) : Node
                     for (var i = 0; i < corners.Length; i++)
                     {
                         var corner = minCorner + CornerOffsets[i] * _scale;
-                        corners[i] = _noise.GetNoise3Dv(corner);
+                        corners[i] = sdf.PlaneSdf(corner);
 
                         caseCode |= (corners[i] < IsoValue ? 1 : 0) << i;
                     }
@@ -447,18 +446,21 @@ public partial class Chunk(Vector3I position, int scale) : Node
 
         var arrMesh = new ArrayMesh();
 
-        arrMesh.AddSurfaceFromArrays(
-            Godot.Mesh.PrimitiveType.Triangles,
-            surfaceArray
-        );
-
-        var mesh = new MeshInstance3D
+        if (vertices.Count is not 0)
         {
-            Mesh = arrMesh
-        };
-        
-        AddChild(mesh);
-        GD.Print(mesh.Mesh.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length);
+            arrMesh.AddSurfaceFromArrays(
+                Godot.Mesh.PrimitiveType.Triangles,
+                surfaceArray
+            );
+            
+            var mesh = new MeshInstance3D
+            {
+                Mesh = arrMesh
+            };
+
+            AddChild(mesh);
+            GD.Print(mesh.Mesh.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length);
+        }
     }
     
     private const double InterpolationThreshold = 0.0001;
@@ -479,10 +481,7 @@ public partial class Chunk(Vector3I position, int scale) : Node
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
-        _noise = new FastNoiseLite
-        {
-            Frequency = 0.1f
-        };
-        Polygonize();
+        ProceduralWorld fun = new ProceduralWorld();
+        Polygonize(fun);
     }
 }
