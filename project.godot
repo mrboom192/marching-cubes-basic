@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="marching-cubes-basic"
-run/main_scene="uid://ccyemve4ws2he"
+run/main_scene="uid://r4qpmx46duqq"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 

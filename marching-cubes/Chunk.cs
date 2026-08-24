@@ -6,10 +6,9 @@ using Vector3 = Godot.Vector3;
 namespace marchingcubesbasic.examples;
 
 [Tool]
-public partial class Chunk(Vector3I position, int scale) : Node
+public partial class Chunk(Aabb bounds) : Node
 {
-    private Vector3I _position = position;
-    private int _scale = scale;
+    private Aabb Bounds => bounds;
 
     // TODO: Work on a 4096 sized array to be used for vertex reuse
     private readonly struct VertexData(Vector3 position, short index, RegularCell cellData)
@@ -356,11 +355,10 @@ public partial class Chunk(Vector3I position, int scale) : Node
         new(0, 1, 1),
         new(1, 1, 1),
     ];
-
-    // Member variables here, example:
+    
     private const int IsoValue = 0; 
-    private int _size = 16;
-    private readonly VertexData?[] _cells = new VertexData?[4096];
+    private int _resolution = 16;
+    private readonly VertexData?[] _cells = new VertexData?[4096]; // For vertex reuse
 
     // TODO: Fix how cell size is currently being calculated
     private void Polygonize(ProceduralWorld sdf)
@@ -370,20 +368,23 @@ public partial class Chunk(Vector3I position, int scale) : Node
         List<int> indices = [];
 
         var offset = 0;
-        for (var x = _position.X; x < _position.X + _size; x++)
+        var step = Bounds.Size / _resolution; // Since we gurantee the AABB to be a square, this works
+        
+        // Godot's AABB class uses floating-point coordinates.
+        for (var x = Bounds.Position.X; x < Bounds.End.X; x += step.X)
         {
-            for (var y = _position.Y; y < _position.Y + _size; y++)
+            for (var y = Bounds.Position.Y; y < Bounds.End.Y; y += step.Y)
             {
-                for (var z = _position.Z; z < _position.Z + _size; z++)
+                for (var z = Bounds.Position.Z; z < Bounds.End.Z; z += step.Z)
                 {
                     // Find the 0 corner, as listed in transvoxel paper
-                    Vector3 minCorner = new(x * _scale, y * _scale, z * _scale);
+                    Vector3 minCorner = new(x, y, z);
                     var corners = new float[8];
                     var caseCode = 0;
 
                     for (var i = 0; i < corners.Length; i++)
                     {
-                        var corner = minCorner + CornerOffsets[i] * _scale;
+                        var corner = minCorner + CornerOffsets[i] * step;
                         corners[i] = sdf.PlaneSdf(corner);
 
                         caseCode |= (corners[i] < IsoValue ? 1 : 0) << i;
@@ -395,13 +396,13 @@ public partial class Chunk(Vector3I position, int scale) : Node
                         continue;
 
                     var descriptors = RegularVertexData[caseCode];
-                    var cellId = (z << 8) | (y << 4) | x;
+                    // var cellId = (z << 8) | (y << 4) | x;
                     
                     // Add in vertices
                     foreach (var descriptor in descriptors)
                     {
                         var flags = descriptor >> 12;
-                        var prevCellId = cellId - (flags & 0x1) | ((flags & 0x2) << 3) | ((flags & 0x4) << 6);
+                        // var prevCellId = cellId - (flags & 0x1) | ((flags & 0x2) << 3) | ((flags & 0x4) << 6);
                         var cornerIdx = (descriptor >> 8) & 0x0F;
 
                         // prevCell will always be less than _cells.Length, so we save a comparison
@@ -415,8 +416,8 @@ public partial class Chunk(Vector3I position, int scale) : Node
                         var a = descriptor & 0x0F;
                         var b = descriptor >> 4 & 0x0F;
 
-                        var edgeA = minCorner + CornerOffsets[a] * _scale;
-                        var edgeB = minCorner + CornerOffsets[b] * _scale;
+                        var edgeA = minCorner + CornerOffsets[a] * step;
+                        var edgeB = minCorner + CornerOffsets[b] * step;
 
                         var vertex = Interpolate(edgeA, edgeB, corners[a], corners[b]);
                         // _cells[cellId, cornerIdx] = new VertexData(vertex, (short)indices.Count);

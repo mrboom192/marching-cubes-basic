@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://r4qpmx46duqq"]
+
+[ext_resource type="Script" uid="uid://d2fw2nm5lljq4" path="res://marching-cubes/Main.cs" id="1_4cxxm"]
+
+[node name="Main" type="Node3D" unique_id=2076774951]
+script = ExtResource("1_4cxxm")
