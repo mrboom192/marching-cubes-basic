@@ -18,7 +18,7 @@ public partial class Octree(Vector3 position, Vector3 size, byte depth) : Node3D
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		AddChild(new Chunk(_bounds));
+		AddChild(new Chunk(_bounds, new ProceduralWorld()));
 
 		// TODO Implement a camera which passes in its position here
 		// if (_depth < 3 && _bounds.HasPoint(Vector3.Zero))

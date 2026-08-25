@@ -2,6 +2,7 @@ using Godot;
 
 namespace marchingcubesbasic.examples;
 
+[Tool]
 // Handles world generation
 public partial class ProceduralWorld : Node
 {
@@ -10,7 +11,6 @@ public partial class ProceduralWorld : Node
 	{
 		Frequency = 0.05f
 	};
-	
 	
 	// Signed distance function of our planet centered at (0, 0, 0)
 	public float PlanetSdf(Vector3 position)

@@ -6,9 +6,10 @@ using Vector3 = Godot.Vector3;
 namespace marchingcubesbasic.examples;
 
 [Tool]
-public partial class Chunk(Aabb bounds) : Node
+public partial class Chunk(Aabb bounds, ProceduralWorld sample) : Node
 {
     private Aabb Bounds => bounds;
+    private ProceduralWorld Sample => sample;
 
     // TODO: Work on a 4096 sized array to be used for vertex reuse
     private readonly struct VertexData(Vector3 position, short index, RegularCell cellData)
@@ -361,14 +362,14 @@ public partial class Chunk(Aabb bounds) : Node
     private readonly VertexData?[] _cells = new VertexData?[4096]; // For vertex reuse
 
     // TODO: Fix how cell size is currently being calculated
-    private void Polygonize(ProceduralWorld sdf)
+    private void Polygonize()
     {
         List<Vector3> vertices = [];
         List<Vector3> normals = [];
         List<int> indices = [];
 
         var offset = 0;
-        var step = Bounds.Size / _resolution; // Since we gurantee the AABB to be a square, this works
+        var step = Bounds.Size / _resolution; // Since we guarantee the AABB to be a square, this works
         
         // Godot's AABB class uses floating-point coordinates.
         for (var x = Bounds.Position.X; x < Bounds.End.X; x += step.X)
@@ -385,7 +386,7 @@ public partial class Chunk(Aabb bounds) : Node
                     for (var i = 0; i < corners.Length; i++)
                     {
                         var corner = minCorner + CornerOffsets[i] * step;
-                        corners[i] = sdf.PlaneSdf(corner);
+                        corners[i] = Sample.PlaneSdf(corner);
 
                         caseCode |= (corners[i] < IsoValue ? 1 : 0) << i;
                     }
@@ -401,7 +402,10 @@ public partial class Chunk(Aabb bounds) : Node
                     // Add in vertices
                     foreach (var descriptor in descriptors)
                     {
+                        // The low byte contains the indexes for the two endpoints of the edge on which the vertex lies,
+                        // as numbered in Figure 3.7. The high byte contains the vertex reuse data shown in Figure 3.8.	
                         var flags = descriptor >> 12;
+                        
                         // var prevCellId = cellId - (flags & 0x1) | ((flags & 0x2) << 3) | ((flags & 0x4) << 6);
                         var cornerIdx = (descriptor >> 8) & 0x0F;
 
@@ -416,13 +420,13 @@ public partial class Chunk(Aabb bounds) : Node
                         var a = descriptor & 0x0F;
                         var b = descriptor >> 4 & 0x0F;
 
-                        var edgeA = minCorner + CornerOffsets[a] * step;
-                        var edgeB = minCorner + CornerOffsets[b] * step;
+                        var vertexA = minCorner + CornerOffsets[a] * step;
+                        var vertexB = minCorner + CornerOffsets[b] * step;
 
-                        var vertex = Interpolate(edgeA, edgeB, corners[a], corners[b]);
+                        var vertex = Interpolate(vertexA, vertexB, corners[a], corners[b]);
                         // _cells[cellId, cornerIdx] = new VertexData(vertex, (short)indices.Count);
                         vertices.Add(vertex);
-                        normals.Add(vertex);
+                        normals.Add(GetNormal(vertex));
                     }
                     
                     // Add in vertex indices for mesh creation
@@ -431,8 +435,11 @@ public partial class Chunk(Aabb bounds) : Node
                     for (var i = cellIndices.Length - 1; i >= 0; i--)
                     {
                         indices.Add(cellIndices[i] + offset);
+                        
+                        // Offset used for ensuring that current index is correctly tracked
                         max = Math.Max(max, cellIndices[i]);
                     }
+                    
                     offset += max + 1;
                 }
             }
@@ -447,25 +454,43 @@ public partial class Chunk(Aabb bounds) : Node
 
         var arrMesh = new ArrayMesh();
 
-        if (vertices.Count is not 0)
+        if (vertices.Count is 0)
         {
-            arrMesh.AddSurfaceFromArrays(
-                Godot.Mesh.PrimitiveType.Triangles,
-                surfaceArray
-            );
-            
-            var mesh = new MeshInstance3D
-            {
-                Mesh = arrMesh
-            };
-
-            AddChild(mesh);
-            GD.Print(mesh.Mesh.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length);
+            return;
         }
+        
+        arrMesh.AddSurfaceFromArrays(
+            Godot.Mesh.PrimitiveType.Triangles,
+            surfaceArray
+        );
+            
+        var mesh = new MeshInstance3D
+        {
+            Mesh = arrMesh
+        };
+
+        AddChild(mesh);
+    }
+
+    // Compute normal using central difference taken from our volumetric data (a vector field)
+    private const double Epsilon = 1.0;
+    private Vector3 GetNormal(Vector3 position)
+    {
+        const float h = (float)(Epsilon / 2.0);
+
+        var hx = new Vector3(h, 0, 0);
+        var dx = Sample.PlaneSdf(position + hx) - Sample.PlaneSdf(position - hx);
+
+        var hy = new Vector3(0, h, 0);
+        var dy = Sample.PlaneSdf(position + hy) - Sample.PlaneSdf(position - hy);
+
+        var hz = new Vector3(0, 0, h);
+        var dz = Sample.PlaneSdf(position + hz) - Sample.PlaneSdf(position - hz);
+
+        return new Vector3(dx, dy, dz).Normalized();
     }
     
     private const double InterpolationThreshold = 0.0001;
-
     private static Vector3 Interpolate(Vector3 a, Vector3 b, float aVal, float bVal)
     {
         if (Math.Abs(IsoValue - aVal) < InterpolationThreshold)
@@ -482,7 +507,6 @@ public partial class Chunk(Aabb bounds) : Node
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
-        ProceduralWorld fun = new ProceduralWorld();
-        Polygonize(fun);
+        Polygonize();
     }
 }

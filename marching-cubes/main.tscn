@@ -2,5 +2,20 @@
 
 [ext_resource type="Script" uid="uid://d2fw2nm5lljq4" path="res://marching-cubes/Main.cs" id="1_4cxxm"]
 
+[sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_hyrd4"]
+
+[sub_resource type="Sky" id="Sky_de83b"]
+sky_material = SubResource("PhysicalSkyMaterial_hyrd4")
+
+[sub_resource type="Environment" id="Environment_qk2o7"]
+background_mode = 2
+sky = SubResource("Sky_de83b")
+
 [node name="Main" type="Node3D" unique_id=2076774951]
 script = ExtResource("1_4cxxm")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1609546178]
+environment = SubResource("Environment_qk2o7")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=211310680]
+transform = Transform3D(0.72185236, -0.30784133, -0.6198087, 0.69204694, 0.32109976, 0.6465031, 2.4076332e-08, -0.89561635, 0.4448272, 5.8934464, 3.9587953, 0)
