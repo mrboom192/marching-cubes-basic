@@ -473,10 +473,9 @@ public partial class Chunk(Aabb bounds, ProceduralWorld sample) : Node
     }
 
     // Compute normal using central difference taken from our volumetric data (a vector field)
-    private const double Epsilon = 1.0;
     private Vector3 GetNormal(Vector3 position)
     {
-        const float h = (float)(Epsilon / 2.0);
+        float h = (Bounds.End.X - Bounds.Position.X) / _resolution;
 
         var hx = new Vector3(h, 0, 0);
         var dx = Sample.PlaneSdf(position + hx) - Sample.PlaneSdf(position - hx);
