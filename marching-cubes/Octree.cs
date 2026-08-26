@@ -28,7 +28,7 @@ public partial class Octree(Vector3 position, int resolution, byte depth) : Node
 			{
 				child.QueueFree();
 			}
-			
+			GD.Print("RAN");
 			AddChild(new Chunk(_bounds, new ProceduralWorld()));
 		}
 	}
