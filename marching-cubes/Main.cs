@@ -10,8 +10,8 @@ public partial class Main : Node3D
 	{
 		var resolution = 0;
 		var a = Math.Pow(2, 4 + resolution);
-		var location = (float)(a - a / 2);
-		AddChild(new Octree(new Vector3(location,location,location), 0, 1));
+		var location = (float)-a/2;
+		AddChild(new Octree(new Vector3(location,location,location), 4));
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
