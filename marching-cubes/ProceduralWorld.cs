@@ -6,21 +6,35 @@ namespace marchingcubesbasic.examples;
 // Handles world generation
 public partial class ProceduralWorld : Node
 {
-	private readonly int _planetRadius = 3;
-	private static FastNoiseLite _noise = new FastNoiseLite
+	private const int PlanetRadius = 6_371_000;
+	private static readonly Vector3 PlanetCenter = new(0, -PlanetRadius, 0);
+	
+	private static readonly FastNoiseLite HillNoise = new()
 	{
-		Frequency = 0.05f
+		Frequency = 0.1f,
+		NoiseType = FastNoiseLite.NoiseTypeEnum.Perlin,
 	};
 	
-	// Signed distance function of our planet centered at (0, 0, 0)
-	public float PlanetSdf(Vector3 position)
+	private static readonly FastNoiseLite MountainNoise = new()
 	{
-		return position.Length() - _planetRadius;
+		Frequency = 0.01f,
+		NoiseType = FastNoiseLite.NoiseTypeEnum.Perlin,
+		FractalOctaves = 1
+	};
+
+	private float GetNoiseDisplacement(Vector3 position)
+	{
+		return HillNoise.GetNoise3Dv(position) + MountainNoise.GetNoise3Dv(position) * 20;
+	}
+	
+	// Signed distance function of our planet centered at (0, 0, 0)
+	private float PlanetSdf(Vector3 position)
+	{
+		return PlanetCenter.DistanceTo(position) - PlanetRadius;
 	}
 
-	// Return a plane 0.2 meters above 0 with some added noise. Update function to be more accurately named
-	public float PlaneSdf(Vector3 position)
+	public float GetDisplacement(Vector3 position)
 	{
-		return position.Y - 0.02f - (_noise.GetNoise3Dv(position) * 6);
+		return PlanetSdf(position) - GetNoiseDisplacement(position);
 	}
 }

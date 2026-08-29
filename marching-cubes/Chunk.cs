@@ -357,8 +357,8 @@ public partial class Chunk(Aabb bounds, ProceduralWorld sample) : Node
         new(1, 1, 1),
     ];
     
-    private const int IsoValue = 0; 
-    private int _resolution = 16;
+    private const int IsoValue = 0;
+    private int _resolution = 32;
     private readonly VertexData?[] _cells = new VertexData?[4096]; // For vertex reuse
 
     // TODO: Fix how cell size is currently being calculated
@@ -386,7 +386,7 @@ public partial class Chunk(Aabb bounds, ProceduralWorld sample) : Node
                     for (var i = 0; i < corners.Length; i++)
                     {
                         var corner = minCorner + CornerOffsets[i] * step;
-                        corners[i] = Sample.PlaneSdf(corner);
+                        corners[i] = Sample.GetDisplacement(corner);
 
                         caseCode |= (corners[i] < IsoValue ? 1 : 0) << i;
                     }
@@ -478,13 +478,13 @@ public partial class Chunk(Aabb bounds, ProceduralWorld sample) : Node
         float h = (Bounds.End.X - Bounds.Position.X) / _resolution;
 
         var hx = new Vector3(h, 0, 0);
-        var dx = Sample.PlaneSdf(position + hx) - Sample.PlaneSdf(position - hx);
+        var dx = Sample.GetDisplacement(position + hx) - Sample.GetDisplacement(position - hx);
 
         var hy = new Vector3(0, h, 0);
-        var dy = Sample.PlaneSdf(position + hy) - Sample.PlaneSdf(position - hy);
+        var dy = Sample.GetDisplacement(position + hy) - Sample.GetDisplacement(position - hy);
 
         var hz = new Vector3(0, 0, h);
-        var dz = Sample.PlaneSdf(position + hz) - Sample.PlaneSdf(position - hz);
+        var dz = Sample.GetDisplacement(position + hz) - Sample.GetDisplacement(position - hz);
 
         return new Vector3(dx, dy, dz).Normalized();
     }
