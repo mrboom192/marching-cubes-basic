@@ -6,10 +6,10 @@ using Vector3 = Godot.Vector3;
 namespace marchingcubesbasic.examples;
 
 [Tool]
-public partial class Chunk(Aabb bounds, ProceduralWorld sample) : Node
+public partial class Chunk(Aabb bounds) : Node
 {
     private Aabb Bounds => bounds;
-    private ProceduralWorld Sample => sample;
+    private static ProceduralWorld _sample = new();
 
     // TODO: Work on a 4096 sized array to be used for vertex reuse
     private readonly struct VertexData(Vector3 position, short index, RegularCell cellData)
@@ -386,7 +386,7 @@ public partial class Chunk(Aabb bounds, ProceduralWorld sample) : Node
                     for (var i = 0; i < corners.Length; i++)
                     {
                         var corner = minCorner + CornerOffsets[i] * step;
-                        corners[i] = Sample.GetDisplacement(corner);
+                        corners[i] = _sample.GetDisplacement(corner);
 
                         caseCode |= (corners[i] < IsoValue ? 1 : 0) << i;
                     }
@@ -478,13 +478,13 @@ public partial class Chunk(Aabb bounds, ProceduralWorld sample) : Node
         float h = (Bounds.End.X - Bounds.Position.X) / _resolution;
 
         var hx = new Vector3(h, 0, 0);
-        var dx = Sample.GetDisplacement(position + hx) - Sample.GetDisplacement(position - hx);
+        var dx = _sample.GetDisplacement(position + hx) - _sample.GetDisplacement(position - hx);
 
         var hy = new Vector3(0, h, 0);
-        var dy = Sample.GetDisplacement(position + hy) - Sample.GetDisplacement(position - hy);
+        var dy = _sample.GetDisplacement(position + hy) - _sample.GetDisplacement(position - hy);
 
         var hz = new Vector3(0, 0, h);
-        var dz = Sample.GetDisplacement(position + hz) - Sample.GetDisplacement(position - hz);
+        var dz = _sample.GetDisplacement(position + hz) - _sample.GetDisplacement(position - hz);
 
         return new Vector3(dx, dy, dz).Normalized();
     }

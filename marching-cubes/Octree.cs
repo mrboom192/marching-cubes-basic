@@ -30,7 +30,7 @@ public partial class Octree(Vector3 position, int resolution) : Node3D
 	{
 		if (resolution <= 0 || !_bounds.HasPoint(Vector3.Zero))
 		{
-			AddChild(new Chunk(_bounds, new ProceduralWorld()));
+			AddChild(new Chunk(_bounds));
 			return;
 		}
 		
