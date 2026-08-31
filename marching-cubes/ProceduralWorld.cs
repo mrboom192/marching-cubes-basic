@@ -4,27 +4,32 @@ namespace marchingcubesbasic.examples;
 
 [Tool]
 // Handles world generation
-public partial class ProceduralWorld : Node
+public partial class ProceduralWorld(int seed) : Node
 {
 	private const int PlanetRadius = 6_371_000;
 	private static readonly Vector3 PlanetCenter = new(0, -PlanetRadius, 0);
 	
-	private static readonly FastNoiseLite DetailNoise = new()
+	private readonly FastNoiseLite _baseNoise = new()
 	{
 		Frequency = 0.1f,
 		NoiseType = FastNoiseLite.NoiseTypeEnum.Perlin,
+		Seed = seed
 	};
 	
-	private static readonly FastNoiseLite HillNoise = new()
+	private readonly FastNoiseLite _sparseNoise = new()
 	{
-		Frequency = 0.01f,
+		Frequency = 0.001f,
 		NoiseType = FastNoiseLite.NoiseTypeEnum.Perlin,
+		Seed = seed
 	};
 
 	private float GetNoiseDisplacement(Vector3 position)
 	{
-		return DetailNoise.GetNoise3Dv(position)
-		       + HillNoise.GetNoise3Dv(position) * 50;
+		var baseDisplacement = _baseNoise.GetNoise3Dv(position);
+		var hillDisplacement = Mathf.Clamp(baseDisplacement - 0.5f, 0, 1) * 10;
+		var mountainDisplacement = Mathf.Clamp(_sparseNoise.GetNoise3Dv(position) - 0.5f, 0, 1) * 10000;
+		
+		return baseDisplacement + hillDisplacement + mountainDisplacement;
 	}
 	
 	// Signed distance function of our planet centered at (0, 0, 0)

@@ -9,7 +9,7 @@ namespace marchingcubesbasic.examples;
 public partial class Chunk(Aabb bounds) : Node
 {
     private Aabb Bounds => bounds;
-    private static ProceduralWorld _sample = new();
+    private static readonly ProceduralWorld Sample = new(1);
 
     // TODO: Work on a 4096 sized array to be used for vertex reuse
     private readonly struct VertexData(Vector3 position, short index, RegularCell cellData)
@@ -386,7 +386,7 @@ public partial class Chunk(Aabb bounds) : Node
                     for (var i = 0; i < corners.Length; i++)
                     {
                         var corner = minCorner + CornerOffsets[i] * step;
-                        corners[i] = _sample.GetDisplacement(corner);
+                        corners[i] = Sample.GetDisplacement(corner);
 
                         caseCode |= (corners[i] < IsoValue ? 1 : 0) << i;
                     }
@@ -478,13 +478,13 @@ public partial class Chunk(Aabb bounds) : Node
         float h = (Bounds.End.X - Bounds.Position.X) / _resolution;
 
         var hx = new Vector3(h, 0, 0);
-        var dx = _sample.GetDisplacement(position + hx) - _sample.GetDisplacement(position - hx);
+        var dx = Sample.GetDisplacement(position + hx) - Sample.GetDisplacement(position - hx);
 
         var hy = new Vector3(0, h, 0);
-        var dy = _sample.GetDisplacement(position + hy) - _sample.GetDisplacement(position - hy);
+        var dy = Sample.GetDisplacement(position + hy) - Sample.GetDisplacement(position - hy);
 
         var hz = new Vector3(0, 0, h);
-        var dz = _sample.GetDisplacement(position + hz) - _sample.GetDisplacement(position - hz);
+        var dz = Sample.GetDisplacement(position + hz) - Sample.GetDisplacement(position - hz);
 
         return new Vector3(dx, dy, dz).Normalized();
     }
