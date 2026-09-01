@@ -13,10 +13,9 @@ public partial class Main : Node3D
 		var a = Math.Pow(2, 4 + resolution);
 		var location = (float)-a/2;
 		
-		var stopwatch = Stopwatch.StartNew();
-		AddChild(new Octree(new Vector3(location,location,location), resolution));
-		stopwatch.Stop();
+		ChunkLoader loader = new ChunkLoader();
+		AddChild(loader);
 		
-		GD.Print($"Octree took {stopwatch.ElapsedMilliseconds} ms");
+		AddChild(new Octree(new Vector3(location,location,location), resolution, loader));
 	}
 }

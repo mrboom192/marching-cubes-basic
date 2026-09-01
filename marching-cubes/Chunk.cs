@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Godot;
 using Vector3 = Godot.Vector3;
 
 namespace marchingcubesbasic.examples;
 
 [Tool]
-public partial class Chunk(Aabb bounds) : Node
+public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node
 {
     private Aabb Bounds => bounds;
     private static readonly ProceduralWorld Sample = new(1);
@@ -469,7 +470,7 @@ public partial class Chunk(Aabb bounds) : Node
             Mesh = arrMesh
         };
 
-        AddChild(mesh);
+        loader.Enqueue(new ChunkMeshData(mesh, GetPath()));
     }
 
     // Compute normal using central difference taken from our volumetric data (a vector field)
@@ -506,6 +507,6 @@ public partial class Chunk(Aabb bounds) : Node
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
     {
-        Polygonize();
+        Task.Run(Polygonize);
     }
 }

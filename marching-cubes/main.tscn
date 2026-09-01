@@ -19,3 +19,4 @@ environment = SubResource("Environment_qk2o7")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=211310680]
 transform = Transform3D(0.72185236, -0.30784133, -0.6198087, 0.69204694, 0.32109976, 0.6465031, 2.4076332e-08, -0.89561635, 0.4448272, 5.8934464, 3.9587953, 0)
+shadow_enabled = true
