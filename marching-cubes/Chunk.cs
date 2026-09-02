@@ -425,9 +425,13 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node
                         var vertexB = minCorner + CornerOffsets[b] * step;
 
                         var vertex = Interpolate(vertexA, vertexB, corners[a], corners[b]);
+                        var normal = GetNormal(vertex);
                         // _cells[cellId, cornerIdx] = new VertexData(vertex, (short)indices.Count);
+
+                        // TODO Implement area weighted smooth normals for this
+                        vertex += normal * Sample.GetNoiseDisplacement(vertex);
                         vertices.Add(vertex);
-                        normals.Add(GetNormal(vertex));
+                        normals.Add(normal);
                     }
                     
                     // Add in vertex indices for mesh creation

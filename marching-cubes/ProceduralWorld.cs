@@ -26,7 +26,7 @@ public partial class ProceduralWorld(int seed) : Node
 	
 	private readonly FastNoiseLite _sparseNoise = new()
 	{
-		Frequency = 0.001f,
+		Frequency = 0.1f,
 		FractalOctaves = 1,
 		NoiseType = FastNoiseLite.NoiseTypeEnum.Perlin,
 		Seed = seed
@@ -34,16 +34,16 @@ public partial class ProceduralWorld(int seed) : Node
 
 	// Using noise means that the volume near the surface of the SDF becomes more distorted
 	// It's not so easy to use it to simply move vertices up and down
-	private float GetNoiseDisplacement(Vector3 position)
+	public float GetNoiseDisplacement(Vector3 position)
 	{
 		var baseDisplacement = _baseNoise.GetNoise3Dv(position);
 		
-		var e = 1f * _baseNoise.GetNoise3Dv(position) 
+		var e = 100f * _baseNoise.GetNoise3Dv(position * 0.01f) 
 		        + 0.5f * _baseNoise.GetNoise3Dv(position * 2f) 
-		        + 0.25f * _baseNoise.GetNoise3Dv(position * 4);
+		        + 0.25f * _baseNoise.GetNoise3Dv(position * 4f);
 		
-		e = e / (1f + 0.5f + 0.25f);
-		return -(float)Math.Pow(e, 2) * 50;
+		e /= 1f + 0.5f + 0.25f;
+		return (float)Math.Pow(e, 2);
 	}
 	
 	// Signed distance function of our planet centered at (0, 0, 0)
@@ -54,6 +54,6 @@ public partial class ProceduralWorld(int seed) : Node
 
 	public float GetDisplacement(Vector3 position)
 	{
-		return PlanetSdf(position) + GetNoiseDisplacement(position);
+		return PlanetSdf(position);
 	}
 }
