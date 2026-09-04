@@ -12,38 +12,37 @@ public partial class ProceduralWorld(int seed) : Node
 	
 	private readonly FastNoiseLite _baseNoise = new()
 	{
-		Frequency = 0.1f,
-		NoiseType = FastNoiseLite.NoiseTypeEnum.Perlin,
-		Seed = seed
-	};
-	
-	private readonly FastNoiseLite _mediumNoise = new()
-	{
-		Frequency = 0.01f,
-		NoiseType = FastNoiseLite.NoiseTypeEnum.Perlin,
-		Seed = seed
-	};
-	
-	private readonly FastNoiseLite _sparseNoise = new()
-	{
-		Frequency = 0.1f,
-		FractalOctaves = 1,
+		Frequency = PlanetRadius,
 		NoiseType = FastNoiseLite.NoiseTypeEnum.Perlin,
 		Seed = seed
 	};
 
-	// Using noise means that the volume near the surface of the SDF becomes more distorted
-	// It's not so easy to use it to simply move vertices up and down
+	// Since the planet surface is implicitly defined by an SDF, negative values raise terrain while positive
+	// values dig out terrain. TODO Add in biomes
 	public float GetNoiseDisplacement(Vector3 position)
 	{
-		var baseDisplacement = _baseNoise.GetNoise3Dv(position);
+		var direction = (position - PlanetCenter) / PlanetCenter.DistanceTo(position);
 		
-		var e = 100f * _baseNoise.GetNoise3Dv(position * 0.01f) 
-		        + 0.5f * _baseNoise.GetNoise3Dv(position * 2f) 
-		        + 0.25f * _baseNoise.GetNoise3Dv(position * 4f);
+		// Mountains
+		const float mountainWeight = 100;
+		const float mountainFrequency = 0.0001f;
+		var mountainNoise = mountainWeight * _baseNoise.GetNoise3Dv(direction * mountainFrequency);
+		mountainNoise *= mountainNoise;
 		
-		e /= 1f + 0.5f + 0.25f;
-		return (float)Math.Pow(e, 2);
+		// Hills
+		const float hillWeight = 10;
+		const float hillFrequency = 0.01f;
+		var hillNoise = hillWeight * _baseNoise.GetNoise3Dv(direction * hillFrequency);
+		hillNoise *= hillNoise;
+		
+		// Bumps
+		const float bumpWeight = 1f;
+		const float bumpFrequency = 0.1f;
+		var bumpNoise = bumpWeight * _baseNoise.GetNoise3Dv(direction * bumpFrequency);
+
+		var displacement = -mountainNoise + -hillNoise + bumpNoise;
+		
+		return displacement;
 	}
 	
 	// Signed distance function of our planet centered at (0, 0, 0)
@@ -54,6 +53,6 @@ public partial class ProceduralWorld(int seed) : Node
 
 	public float GetDisplacement(Vector3 position)
 	{
-		return PlanetSdf(position);
+		return PlanetSdf(position) + GetNoiseDisplacement(position);
 	}
 }

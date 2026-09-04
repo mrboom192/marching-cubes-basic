@@ -10,6 +10,16 @@ sky_material = SubResource("PhysicalSkyMaterial_hyrd4")
 [sub_resource type="Environment" id="Environment_qk2o7"]
 background_mode = 2
 sky = SubResource("Sky_de83b")
+fog_enabled = true
+fog_density = 0.0005
+fog_sky_affect = 0.037
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iqg6d"]
+albedo_color = Color(0.91563123, 0.5773165, 1, 1)
+roughness = 0.37
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_cnci3"]
+material = SubResource("StandardMaterial3D_iqg6d")
 
 [node name="Main" type="Node3D" unique_id=2076774951]
 script = ExtResource("1_4cxxm")
@@ -20,3 +30,7 @@ environment = SubResource("Environment_qk2o7")
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=211310680]
 transform = Transform3D(0.72185236, -0.30784133, -0.6198087, 0.69204694, 0.32109976, 0.6465031, 2.4076332e-08, -0.89561635, 0.4448272, 5.8934464, 3.9587953, 0)
 shadow_enabled = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1812634434]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0923166, 0)
+mesh = SubResource("CapsuleMesh_cnci3")
