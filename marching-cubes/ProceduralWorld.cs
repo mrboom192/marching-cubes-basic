@@ -18,27 +18,31 @@ public partial class ProceduralWorld(int seed) : Node
 	};
 
 	// Since the planet surface is implicitly defined by an SDF, negative values raise terrain while positive
-	// values dig out terrain. TODO Add in biomes
-	public float GetNoiseDisplacement(Vector3 position)
+	// values dig out terrain. Noise values are generated in the range of [-1, 1].
+	// TODO Add in biomes, make frequency proportional to the radius of the planet
+	private float GetNoiseDisplacement(Vector3 position)
 	{
 		var direction = (position - PlanetCenter) / PlanetCenter.DistanceTo(position);
 		
 		// Mountains
-		const float mountainWeight = 100;
+		const float mountainWeight = 0.00139f;
 		const float mountainFrequency = 0.0001f;
-		var mountainNoise = mountainWeight * _baseNoise.GetNoise3Dv(direction * mountainFrequency);
-		mountainNoise *= mountainNoise;
+		var mountainNoise = _baseNoise.GetNoise3Dv(direction * mountainFrequency);
+		mountainNoise *= mountainNoise; // Values from 0-1
+		mountainNoise *= PlanetRadius * mountainWeight;
 		
 		// Hills
-		const float hillWeight = 10;
-		const float hillFrequency = 0.01f;
-		var hillNoise = hillWeight * _baseNoise.GetNoise3Dv(direction * hillFrequency);
+		const float hillWeight = 0.0000314f;
+		const float hillFrequency = 0.001f;
+		var hillNoise = _baseNoise.GetNoise3Dv(direction * hillFrequency);
 		hillNoise *= hillNoise;
+		hillNoise *= PlanetRadius * hillWeight;
 		
 		// Bumps
-		const float bumpWeight = 1f;
+		const float detailWeight = 0.0000005f;
 		const float bumpFrequency = 0.1f;
-		var bumpNoise = bumpWeight * _baseNoise.GetNoise3Dv(direction * bumpFrequency);
+		var bumpNoise = _baseNoise.GetNoise3Dv(direction * bumpFrequency);
+		bumpNoise *= PlanetRadius * detailWeight;
 
 		var displacement = -mountainNoise + -hillNoise + bumpNoise;
 		
@@ -50,9 +54,22 @@ public partial class ProceduralWorld(int seed) : Node
 	{
 		return PlanetCenter.DistanceTo(position) - PlanetRadius;
 	}
+	
+	private static float Crater(Vector3 position)
+	{
+		var craterPosition = new Vector3(5f, 5f, 5f);
+		const float craterRadius = 100f;
+
+		var distance = craterPosition.DistanceTo(position);
+
+		if (distance > craterRadius)
+			return 0f;
+
+		return craterRadius - distance;
+	}
 
 	public float GetDisplacement(Vector3 position)
 	{
-		return PlanetSdf(position) + GetNoiseDisplacement(position);
+		return PlanetSdf(position) + GetNoiseDisplacement(position) + Crater(position);
 	}
 }
