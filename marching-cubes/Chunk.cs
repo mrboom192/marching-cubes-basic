@@ -368,10 +368,8 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node
         List<Vector3> vertices = [];
         List<Vector3> normals = [];
         List<int> indices = [];
-        List<Vector2> uvs = [];
 
         var offset = 0;
-        var currUv = 0;
         var step = Bounds.Size / _resolution; // Since we guarantee the AABB to be a square, this works
         
         // Godot's AABB class uses floating-point coordinates.
@@ -430,21 +428,6 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node
                         var normal = GetNormal(vertex);
                         // _cells[cellId, cornerIdx] = new VertexData(vertex, (short)indices.Count);
                         
-                        Vector2 uv = new(0, 0);
-
-                        switch (currUv % 3)
-                        {
-                            case 1:
-                                uv = new Vector2(0, 1);
-                                break;
-                            case 2:
-                                uv = new Vector2(1, 0);
-                                break;
-                        }
-
-                        uvs.Add(uv);
-                        currUv++;
-                        
                         vertices.Add(vertex);
                         normals.Add(normal);
                     }
@@ -471,17 +454,14 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node
         surfaceArray[(int)Mesh.ArrayType.Vertex] = vertices.ToArray();
         surfaceArray[(int)Mesh.ArrayType.Index] = indices.ToArray();
         surfaceArray[(int)Mesh.ArrayType.Normal] = normals.ToArray();
-        surfaceArray[(int)Mesh.ArrayType.TexUV] = uvs.ToArray();
 
         var arrMesh = new ArrayMesh();
 
         if (vertices.Count is 0)
-        {
             return;
-        }
         
         arrMesh.AddSurfaceFromArrays(
-            Godot.Mesh.PrimitiveType.Triangles,
+            Mesh.PrimitiveType.Triangles,
             surfaceArray
         );
             
@@ -490,8 +470,9 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node
             Mesh = arrMesh
         };
         
-        Texture2D myTexture = GD.Load<Texture2D>("res://textures/rocky_terrain_02_diff_1k.png");
+        var myTexture = GD.Load<Texture2D>("res://textures/rocky_terrain_02_diff_1k.png");
         var mat = new StandardMaterial3D();
+        mat.Uv1Triplanar = true;
         mat.AlbedoTexture = myTexture;
         mesh.SetMaterialOverride(mat);
 
