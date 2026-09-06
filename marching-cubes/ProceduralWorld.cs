@@ -9,6 +9,12 @@ public partial class ProceduralWorld(int seed) : Node
 {
 	private const int PlanetRadius = 6_371_000;
 	private static readonly Vector3 PlanetCenter = new(0, -PlanetRadius, 0);
+
+	// Position, radius
+	private static (Vector3, float)[] Craters =
+	[
+		(new Vector3(5f, 5f, 5f), 10f)
+	];
 	
 	private readonly FastNoiseLite _baseNoise = new()
 	{
@@ -55,21 +61,20 @@ public partial class ProceduralWorld(int seed) : Node
 		return PlanetCenter.DistanceTo(position) - PlanetRadius;
 	}
 	
-	private static float Crater(Vector3 position)
+	private static float GetCraterDisplacement(Vector3 position)
 	{
-		var craterPosition = new Vector3(5f, 5f, 5f);
-		const float craterRadius = 100f;
+		(Vector3, float) crater = Craters[0];
+		
+		var distance = crater.Item1.DistanceTo(position);
 
-		var distance = craterPosition.DistanceTo(position);
-
-		if (distance > craterRadius)
+		if (distance > crater.Item2)
 			return 0f;
 
-		return craterRadius - distance;
+		return crater.Item2 - distance;
 	}
 
 	public float GetDisplacement(Vector3 position)
 	{
-		return PlanetSdf(position) + GetNoiseDisplacement(position) + Crater(position);
+		return PlanetSdf(position) + GetNoiseDisplacement(position) + GetCraterDisplacement(position);
 	}
 }
