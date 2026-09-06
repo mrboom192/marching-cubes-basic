@@ -387,7 +387,7 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node
                     for (var i = 0; i < corners.Length; i++)
                     {
                         var corner = minCorner + CornerOffsets[i] * step;
-                        corners[i] = Sample.GetDisplacement(corner);
+                        corners[i] = Sample.GetSignedDistance(corner);
 
                         caseCode |= (corners[i] < IsoValue ? 1 : 0) << i;
                     }
@@ -485,13 +485,13 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node
         float h = (Bounds.End.X - Bounds.Position.X) / _resolution;
 
         var hx = new Vector3(h, 0, 0);
-        var dx = Sample.GetDisplacement(position + hx) - Sample.GetDisplacement(position - hx);
+        var dx = Sample.GetSignedDistance(position + hx) - Sample.GetSignedDistance(position - hx);
 
         var hy = new Vector3(0, h, 0);
-        var dy = Sample.GetDisplacement(position + hy) - Sample.GetDisplacement(position - hy);
+        var dy = Sample.GetSignedDistance(position + hy) - Sample.GetSignedDistance(position - hy);
 
         var hz = new Vector3(0, 0, h);
-        var dz = Sample.GetDisplacement(position + hz) - Sample.GetDisplacement(position - hz);
+        var dz = Sample.GetSignedDistance(position + hz) - Sample.GetSignedDistance(position - hz);
 
         return new Vector3(dx, dy, dz).Normalized();
     }
