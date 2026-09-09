@@ -73,8 +73,33 @@ public partial class ProceduralWorld(int seed) : Node
 		return crater.Item2 - distance;
 	}
 
-	public float GetDisplacement(Vector3 position)
+	/// <summary>
+	/// Calculates the signed distance from the implicit surface.
+	/// Values inside the surface are negative, while values outside are positive.
+	/// </summary>
+	/// <param name="position">The position to evaluate.</param>
+	/// <returns>The signed distance from the implicit surface.</returns>
+	public float GetSignedDistance(Vector3 position)
 	{
 		return PlanetSdf(position) + GetNoiseDisplacement(position) + GetCraterDisplacement(position);
+	}
+
+	/// <summary>
+	/// Calculates the surface point closest to the given position.
+	/// Currently, this implementation is incorrect.
+	/// </summary>
+	/// <param name="position">The position vector.</param>
+	/// <returns>A point on the surface</returns>
+	public Vector3 GetNearestSurfacePosition(Vector3 position)
+	{
+		const float threshold = 0.0001f;
+		var aVal = GetSignedDistance(position);
+		var bVal = GetSignedDistance(PlanetCenter);
+		
+		if (Math.Abs(0 - aVal) < threshold)
+			return position;
+
+		var mu = (0 - aVal) / (bVal - aVal);
+		return position.Lerp(PlanetCenter, mu);
 	}
 }
