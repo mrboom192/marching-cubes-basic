@@ -7,7 +7,7 @@ using Vector3 = Godot.Vector3;
 namespace marchingcubesbasic.examples;
 
 [Tool]
-public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node
+public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node3D
 {
     private Aabb Bounds => bounds;
     private static readonly ProceduralWorld Sample = new(1);

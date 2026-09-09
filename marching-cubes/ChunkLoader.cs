@@ -21,10 +21,8 @@ public partial class ChunkLoader : Node
 
     public override void _Process(double delta)
     {
-        if (_completed.TryDequeue(out var data))
-        {
-            var chunk = GetNode<Node>(data.NodePath);
-            chunk.AddChild(data.Mesh);
-        }
+        if (!_completed.TryDequeue(out var data)) return;
+        var chunk = GetNode<Node>(data.NodePath);
+        chunk.AddChild(data.Mesh);
     }
 }
