@@ -359,10 +359,9 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node3D
     ];
     
     private const int IsoValue = 0;
-    private int _resolution = 32;
+    private int _resolution = 32; // Number of cells in the chunk
     private readonly VertexData?[] _cells = new VertexData?[4096]; // For vertex reuse
 
-    // TODO: Fix how cell size is currently being calculated
     private void Polygonize()
     {
         List<Vector3> vertices = [];
@@ -470,14 +469,31 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node3D
             Mesh = arrMesh
         };
         
-        var landTxt = GD.Load<Texture2D>("res://textures/rocky_terrain_02_diff_1k.png");
-        var dirtTxt = GD.Load<Texture2D>("res://textures/dirt_diff_1k.png");
+        var landAlb = GD.Load<Texture2D>("res://textures/sparse_grass_1k/diff.jpg");
+        var dirtAlb = GD.Load<Texture2D>("res://textures/dirt_1k/diff.jpg");
+        
+        var landNor = GD.Load<Texture2D>("res://textures/sparse_grass_1k/nor.jpg");
+        var dirtNor = GD.Load<Texture2D>("res://textures/dirt_1k/nor.jpg");
+        
+        var landRgh = GD.Load<Texture2D>("res://textures/sparse_grass_1k/rough.jpg");
+        var dirtRgh = GD.Load<Texture2D>("res://textures/dirt_1k/rough.jpg");
+        
         var landShader = GD.Load<Shader>("res://shaders/land.gdshader");
         var mat = new ShaderMaterial();
         mat.Shader = landShader;
-        mat.SetShaderParameter("txt_x",  dirtTxt);
-        mat.SetShaderParameter("txt_y",  landTxt);
-        mat.SetShaderParameter("txt_z",  dirtTxt);
+        
+        mat.SetShaderParameter("alb_x",  dirtAlb);
+        mat.SetShaderParameter("alb_y",  landAlb);
+        mat.SetShaderParameter("alb_z",  dirtAlb);
+        
+        mat.SetShaderParameter("nor_x",  dirtNor);
+        mat.SetShaderParameter("nor_y",  landNor);
+        mat.SetShaderParameter("nor_z",  dirtNor);
+        
+        mat.SetShaderParameter("rou_x",  dirtRgh);
+        mat.SetShaderParameter("rou_y",  landRgh);
+        mat.SetShaderParameter("rou_z",  dirtRgh);
+        
         mesh.SetMaterialOverride(mat);
 
         loader.Enqueue(new ChunkMeshData(mesh, GetPath()));

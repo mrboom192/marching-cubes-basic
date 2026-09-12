@@ -13,7 +13,7 @@ public partial class ProceduralWorld(int seed) : Node
 	// Position, radius
 	private static (Vector3, float)[] Craters =
 	[
-		(new Vector3(5f, 5f, 5f), 10f)
+		(new Vector3(5f, 5f, 5f), 50f)
 	];
 	
 	private readonly FastNoiseLite _baseNoise = new()

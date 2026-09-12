@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bamb1hb3y8x72"
-path.s3tc="res://.godot/imported/dirt_diff_1k.png-85a13d597316eb4e16befdb0e6b1145b.s3tc.ctex"
+uid="uid://bsfawyntgoguv"
+path.s3tc="res://.godot/imported/rough.jpg-410ba9cbf684a087b00f80c93bf55e63.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://textures/dirt_diff_1k.png"
-dest_files=["res://.godot/imported/dirt_diff_1k.png-85a13d597316eb4e16befdb0e6b1145b.s3tc.ctex"]
+source_file="res://textures/sparse_grass_1k/rough.jpg"
+dest_files=["res://.godot/imported/rough.jpg-410ba9cbf684a087b00f80c93bf55e63.s3tc.ctex"]
 
 [params]
 
