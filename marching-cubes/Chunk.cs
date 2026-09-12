@@ -469,6 +469,7 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node3D
             Mesh = arrMesh
         };
         
+        
         var landAlb = GD.Load<Texture2D>("res://textures/sparse_grass_1k/diff.jpg");
         var dirtAlb = GD.Load<Texture2D>("res://textures/dirt_1k/diff.jpg");
         

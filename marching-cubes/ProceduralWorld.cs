@@ -11,7 +11,7 @@ public partial class ProceduralWorld(int seed) : Node
 	private static readonly Vector3 PlanetCenter = new(0, -PlanetRadius, 0);
 
 	// Position, radius
-	private static (Vector3, float)[] Craters =
+	private static readonly (Vector3, float)[] Craters =
 	[
 		(new Vector3(5f, 5f, 5f), 50f)
 	];
