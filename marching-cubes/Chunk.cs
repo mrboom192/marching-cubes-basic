@@ -470,10 +470,14 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node3D
             Mesh = arrMesh
         };
         
-        var myTexture = GD.Load<Texture2D>("res://textures/rocky_terrain_02_diff_1k.png");
-        var mat = new StandardMaterial3D();
-        mat.Uv1Triplanar = true;
-        mat.AlbedoTexture = myTexture;
+        var landTxt = GD.Load<Texture2D>("res://textures/rocky_terrain_02_diff_1k.png");
+        var dirtTxt = GD.Load<Texture2D>("res://textures/dirt_diff_1k.png");
+        var landShader = GD.Load<Shader>("res://shaders/land.gdshader");
+        var mat = new ShaderMaterial();
+        mat.Shader = landShader;
+        mat.SetShaderParameter("txt_x",  dirtTxt);
+        mat.SetShaderParameter("txt_y",  landTxt);
+        mat.SetShaderParameter("txt_z",  dirtTxt);
         mesh.SetMaterialOverride(mat);
 
         loader.Enqueue(new ChunkMeshData(mesh, GetPath()));
@@ -482,7 +486,7 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node3D
     // Compute normal using central difference taken from our volumetric data (a vector field)
     private Vector3 GetNormal(Vector3 position)
     {
-        float h = (Bounds.End.X - Bounds.Position.X) / _resolution;
+        var h = (Bounds.End.X - Bounds.Position.X) / _resolution;
 
         var hx = new Vector3(h, 0, 0);
         var dx = Sample.GetSignedDistance(position + hx) - Sample.GetSignedDistance(position - hx);
