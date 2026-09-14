@@ -7,10 +7,10 @@ using Vector3 = Godot.Vector3;
 namespace marchingcubesbasic.examples;
 
 [Tool]
-public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node3D
+public partial class Chunk(Aabb bounds, ChunkLoader loader, ProceduralWorld sample) : Node3D
 {
     private Aabb Bounds => bounds;
-    private static readonly ProceduralWorld Sample = new(1);
+    private ProceduralWorld Sample => sample;
 
     // TODO: Work on a 4096 sized array to be used for vertex reuse
     private readonly struct VertexData(Vector3 position, short index, RegularCell cellData)
@@ -369,6 +369,7 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node3D
         List<int> indices = [];
 
         var offset = 0;
+        var h = (Bounds.End.X - Bounds.Position.X) / _resolution; // Spacing for normal
         var step = Bounds.Size / _resolution; // Since we guarantee the AABB to be a square, this works
         
         // Godot's AABB class uses floating-point coordinates.
@@ -424,7 +425,8 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node3D
                         var vertexB = minCorner + CornerOffsets[b] * step;
 
                         var vertex = Interpolate(vertexA, vertexB, corners[a], corners[b]);
-                        var normal = GetNormal(vertex);
+                        // The normal is the gradient
+                        var normal = Sample.GetGradient(vertex, h);
                         // _cells[cellId, cornerIdx] = new VertexData(vertex, (short)indices.Count);
                         
                         vertices.Add(vertex);
@@ -495,26 +497,11 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader) : Node3D
         mat.SetShaderParameter("rou_y",  landRgh);
         mat.SetShaderParameter("rou_z",  dirtRgh);
         
+        mat.SetShaderParameter("origin",  sample.GetPlanetOrigin());
+        
         mesh.SetMaterialOverride(mat);
 
         loader.Enqueue(new ChunkMeshData(mesh, GetPath()));
-    }
-
-    // Compute normal using central difference taken from our volumetric data (a vector field)
-    private Vector3 GetNormal(Vector3 position)
-    {
-        var h = (Bounds.End.X - Bounds.Position.X) / _resolution;
-
-        var hx = new Vector3(h, 0, 0);
-        var dx = Sample.GetSignedDistance(position + hx) - Sample.GetSignedDistance(position - hx);
-
-        var hy = new Vector3(0, h, 0);
-        var dy = Sample.GetSignedDistance(position + hy) - Sample.GetSignedDistance(position - hy);
-
-        var hz = new Vector3(0, 0, h);
-        var dz = Sample.GetSignedDistance(position + hz) - Sample.GetSignedDistance(position - hz);
-
-        return new Vector3(dx, dy, dz).Normalized();
     }
     
     private const double InterpolationThreshold = 0.0001;

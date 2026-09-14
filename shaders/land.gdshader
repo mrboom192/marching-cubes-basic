@@ -1,5 +1,6 @@
 shader_type spatial;
 
+uniform vec3 origin = vec3(0.0);
 uniform float m = 1.0; // Can be thought of as cutoff
 uniform float delta = 0.25; // Can be thought of as texture blend threshold
 uniform float scale = 25.0; // Texture scale (greater = larger texture)

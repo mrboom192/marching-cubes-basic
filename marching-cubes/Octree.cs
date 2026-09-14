@@ -4,7 +4,7 @@ using Godot;
 namespace marchingcubesbasic.examples;
 
 [Tool]
-public partial class Octree(Vector3 position, int resolution, ChunkLoader loader) : Node3D
+public partial class Octree(Vector3 position, int resolution, ChunkLoader loader, ProceduralWorld sample) : Node3D
 {
 	private Aabb _bounds = new(position, Vector3.One * (1 << (4 + resolution)));
 	private readonly Vector3[] _childOrigins =
@@ -26,14 +26,14 @@ public partial class Octree(Vector3 position, int resolution, ChunkLoader loader
 	{
 		if (resolution <= 0 || !_bounds.HasPoint(Vector3.Zero))
 		{
-			AddChild(new Chunk(_bounds, loader));
+			AddChild(new Chunk(_bounds, loader, sample));
 			return;
 		}
 
 		// Add in children
 		foreach(var origin in _childOrigins)
 		{
-			AddChild(new Octree(origin, resolution - 1, loader));
+			AddChild(new Octree(origin, resolution - 1, loader, sample));
 		}
 	}
 }

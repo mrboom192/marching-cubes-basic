@@ -23,6 +23,11 @@ public partial class ProceduralWorld(int seed) : Node
 		Seed = seed
 	};
 
+	public Vector3 GetPlanetOrigin()
+	{
+		return PlanetCenter;
+	}
+
 	// Since the planet surface is implicitly defined by an SDF, negative values raise terrain while positive
 	// values dig out terrain. Noise values are generated in the range of [-1, 1].
 	// TODO Add in biomes, make frequency proportional to the radius of the planet
@@ -86,20 +91,36 @@ public partial class ProceduralWorld(int seed) : Node
 
 	/// <summary>
 	/// Calculates the surface point closest to the given position.
-	/// Currently, this implementation is incorrect.
+	/// Currently relies on the SDF to be correct
 	/// </summary>
 	/// <param name="position">The position vector.</param>
 	/// <returns>A point on the surface</returns>
 	public Vector3 GetNearestSurfacePosition(Vector3 position)
 	{
-		const float threshold = 0.0001f;
-		var aVal = GetSignedDistance(position);
-		var bVal = GetSignedDistance(PlanetCenter);
+		var gradient = GetGradient(position, 10.0f);
+		var distance = GetSignedDistance(position);
 		
-		if (Math.Abs(0 - aVal) < threshold)
-			return position;
+		return position - gradient * distance;
+	}
 
-		var mu = (0 - aVal) / (bVal - aVal);
-		return position.Lerp(PlanetCenter, mu);
+	/// <summary>
+	/// Returns a Vector3 representing the normalized gradient at that point,
+	/// calculated using central finite difference.
+	/// </summary>
+	/// <param name="position">The position vector.</param>
+	/// <param name="h">The spacing amount.</param>
+	/// <returns>The gradient of the scalar field at position.</returns>
+	public Vector3 GetGradient(Vector3 position, float h)
+	{
+		var hx = new Vector3(h, 0, 0);
+		var dx = GetSignedDistance(position + hx) - GetSignedDistance(position - hx);
+
+		var hy = new Vector3(0, h, 0);
+		var dy = GetSignedDistance(position + hy) - GetSignedDistance(position - hy);
+
+		var hz = new Vector3(0, 0, h);
+		var dz = GetSignedDistance(position + hz) - GetSignedDistance(position - hz);
+
+		return new Vector3(dx, dy, dz).Normalized();
 	}
 }
