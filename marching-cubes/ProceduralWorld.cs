@@ -7,7 +7,8 @@ namespace marchingcubesbasic.examples;
 // Handles world generation
 public partial class ProceduralWorld(int seed) : Node
 {
-	private const int PlanetRadius = 6_371_000;
+	// private const int PlanetRadius = 6_371_000;
+	private const int PlanetRadius = 100;
 	private static readonly Vector3 PlanetCenter = new(0, -PlanetRadius, 0);
 
 	// Position, radius

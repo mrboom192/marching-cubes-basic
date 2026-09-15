@@ -21,9 +21,11 @@ uniform sampler2D nor_z;
 uniform sampler2D rou_z;
 
 // In Godot, the Y-axis points up in 3D space
-vec3 triplanar(sampler2D txt_x, sampler2D txt_y, sampler2D txt_z, vec3 p, vec3 n) {
+vec3 triplanar2(sampler2D txt_x, sampler2D txt_y, sampler2D txt_z, vec3 p, vec3 n) {
 	// Flip texture based on normal direction to prevent mirroring
 	vec4 f = vec4(n.x < 0.0 ? -1.0 : 1.0, n.y >= 0.0 ? -1.0 : 1.0, n.z < 0.0 ? -1.0 : 1.0, 1.0);
+	
+	// Some function F: m -> m' where m' = (u, v) such that 
 
 	// Sample the 3 texture maps, and f.a is used to only negate one axis
 	vec4 x = texture(txt_x, (p.yz * f.ra) / scale);
@@ -34,6 +36,39 @@ vec3 triplanar(sampler2D txt_x, sampler2D txt_y, sampler2D txt_z, vec3 p, vec3 n
 	float bx = pow(max(abs(n.x) - delta, 0.0), m);
 	float by = pow(max(abs(n.y) - delta, 0.0), m);
 	float bz = pow(max(abs(n.z) - delta, 0.0), m);
+	
+	// Blend the values
+	vec4 res = (bx * x + by * y + bz * z) / max(bx + by + bz, 0.001);
+	
+	return res.xyz;
+}
+
+// In Godot, the Y-axis points up in 3D space
+vec3 triplanar(sampler2D txt_x, sampler2D txt_y, sampler2D txt_z, vec3 p, vec3 n) {
+	// Change of basis
+	vec3 reference = vec3(0.0, 0.0, 1.0);
+	vec3 local_y = normalize(p - origin);
+	vec3 local_x = normalize(cross(local_y, reference));
+	vec3 local_z = normalize(cross(local_x, local_y));
+	
+	float dot_x = dot(n, local_x);
+	float dot_y = dot(n, local_y);
+	float dot_z = dot(n, local_z);
+	
+	// Flip texture based on normal direction to prevent mirroring
+	vec4 f = vec4(dot_x < 0.0 ? -1.0 : 1.0, dot_y >= 0.0 ? -1.0 : 1.0, dot_z < 0.0 ? -1.0 : 1.0, 1.0);
+	
+	// Some function F: m -> m' where m' = (u, v) such that 
+
+	// Sample the 3 texture maps, and f.a is used to only negate one axis
+	vec4 x = texture(txt_x, (p.yz * f.ra) / scale);
+	vec4 y = texture(txt_y, (p.zx * f.ga) / scale);
+	vec4 z = texture(txt_z, (p.xy * f.ba) / scale); 
+	
+	// Get blend weights
+	float bx = pow(max(abs(dot_x) - delta, 0.0), m);
+	float by = pow(max(abs(dot_y) - delta, 0.0), m);
+	float bz = pow(max(abs(dot_z) - delta, 0.0), m);
 	
 	// Blend the values
 	vec4 res = (bx * x + by * y + bz * z) / max(bx + by + bz, 0.001);
