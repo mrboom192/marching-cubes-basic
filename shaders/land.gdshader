@@ -21,7 +21,7 @@ uniform sampler2D nor_z;
 uniform sampler2D rou_z;
 
 // In Godot, the Y-axis points up in 3D space
-vec3 triplanar2(sampler2D txt_x, sampler2D txt_y, sampler2D txt_z, vec3 p, vec3 n) {
+vec3 triplanar(sampler2D txt_x, sampler2D txt_y, sampler2D txt_z, vec3 p, vec3 n) {
 	// Flip texture based on normal direction to prevent mirroring
 	vec4 f = vec4(n.x < 0.0 ? -1.0 : 1.0, n.y >= 0.0 ? -1.0 : 1.0, n.z < 0.0 ? -1.0 : 1.0, 1.0);
 	
@@ -44,7 +44,7 @@ vec3 triplanar2(sampler2D txt_x, sampler2D txt_y, sampler2D txt_z, vec3 p, vec3 
 }
 
 // In Godot, the Y-axis points up in 3D space
-vec3 triplanar(sampler2D txt_x, sampler2D txt_y, sampler2D txt_z, vec3 p, vec3 n) {
+vec3 triplanar2(sampler2D txt_x, sampler2D txt_y, sampler2D txt_z, vec3 p, vec3 n) {
 	// Change of basis
 	vec3 reference = vec3(0.0, 0.0, 1.0);
 	vec3 local_y = normalize(p - origin);
@@ -58,8 +58,6 @@ vec3 triplanar(sampler2D txt_x, sampler2D txt_y, sampler2D txt_z, vec3 p, vec3 n
 	// Flip texture based on normal direction to prevent mirroring
 	vec4 f = vec4(dot_x < 0.0 ? -1.0 : 1.0, dot_y >= 0.0 ? -1.0 : 1.0, dot_z < 0.0 ? -1.0 : 1.0, 1.0);
 	
-	// Some function F: m -> m' where m' = (u, v) such that 
-
 	// Sample the 3 texture maps, and f.a is used to only negate one axis
 	vec4 x = texture(txt_x, (p.yz * f.ra) / scale);
 	vec4 y = texture(txt_y, (p.zx * f.ga) / scale);
@@ -76,11 +74,19 @@ vec3 triplanar(sampler2D txt_x, sampler2D txt_y, sampler2D txt_z, vec3 p, vec3 n
 	return res.xyz;
 }
 
+// Experiment
+float climate(vec3 nor) {
+	// Assuming sun is coming from +z
+	float angle = dot(nor, vec3(0.0,0.0,-1.0));
+	return max(-angle, 0.0);
+}
+
 void fragment() {
 	vec3 pos = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	vec3 nor = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz;
 	
-    ALBEDO = triplanar(alb_x, alb_y, alb_z, pos, nor);
+    //ALBEDO = vec3(climate(nor));
+	ALBEDO = triplanar(alb_x, alb_y, alb_z, pos, nor);
     ROUGHNESS = triplanar(rou_x, rou_y, rou_z, pos, nor).r;
 		
 	NORMAL_MAP = triplanar(nor_x, nor_y, nor_z, pos, nor);
