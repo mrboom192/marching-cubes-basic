@@ -23,6 +23,9 @@ public partial class ChunkLoader : Node
     {
         if (!_completed.TryDequeue(out var data)) return;
         var chunk = GetNode<Node>(data.NodePath);
+        
+        // GD.Print(chunk.GetPath());
+        
         chunk.AddChild(data.Mesh);
     }
 }

@@ -90,5 +90,5 @@ void fragment() {
     ROUGHNESS = triplanar(rou_x, rou_y, rou_z, pos, nor).r;
 		
 	NORMAL_MAP = triplanar(nor_x, nor_y, nor_z, pos, nor);
-	NORMAL_MAP_DEPTH = 2.0;
+	NORMAL_MAP_DEPTH = 5.0;
 }

@@ -87,7 +87,17 @@ public partial class ProceduralWorld(int seed) : Node
 	/// <returns>The signed distance from the implicit surface.</returns>
 	public float GetSignedDistance(Vector3 position)
 	{
-		return PlanetSdf(position) + GetNoiseDisplacement(position) + GetCraterDisplacement(position);
+		//return PlanetSdf(position) + GetNoiseDisplacement(position) + GetCraterDisplacement(position);
+		return PlanetSdf(position) + GetNoiseDisplacement(position);
+	}
+
+	public Vector4 GetBiomeColor(Vector3 position)
+	{
+		var direction = (position - PlanetCenter) / PlanetCenter.DistanceTo(position);
+
+		var sandBiome = (float)Math.Round(_baseNoise.GetNoise3Dv(direction));
+
+		return sandBiome < 1 ? new Vector4(0.20f, 0.72f, 0.35f, 1.0f) : new Vector4(0.76f, 0.65f, 0.45f, 1.0f);
 	}
 
 	/// <summary>
