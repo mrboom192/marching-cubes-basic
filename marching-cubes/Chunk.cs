@@ -465,7 +465,7 @@ public partial class Chunk(Aabb bounds, ChunkLoader loader, ProceduralWorld samp
             Mesh.PrimitiveType.Triangles,
             surfaceArray
         );
-            
+        
         var mesh = new MeshInstance3D
         {
             Mesh = arrMesh
